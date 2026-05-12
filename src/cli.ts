@@ -3,6 +3,9 @@
 import { Command } from "commander";
 import { registerAuthCommands } from "./commands/auth.js";
 import { registerCrudCommands } from "./commands/crud.js";
+import { registerAccountCommands } from "./commands/account.js";
+import { registerOpportunityCommands } from "./commands/opportunity.js";
+import { registerVisitCommands } from "./commands/visit.js";
 
 const program = new Command();
 
@@ -24,5 +27,10 @@ registerAuthCommands(program);
 
 // ---- Phase 4: 通用 CRUD ----
 registerCrudCommands(program);
+
+// ---- Phase 5: 语义别名 ----
+registerAccountCommands(program);
+registerOpportunityCommands(program);
+registerVisitCommands(program);
 
 program.parse();
