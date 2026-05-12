@@ -3,7 +3,7 @@
 import { Command } from "commander";
 import { withAuth } from "../middleware/auth-check.js";
 import { formatOutput } from "../api/format.js";
-import { classifyError } from "../api/errors.js";
+import { fmt, parseFields, parseData, handleError } from "./shared.js";
 import {
   getObject,
   createObject,
@@ -11,11 +11,12 @@ import {
   deleteObject,
   queryObjects,
 } from "../services/object.service.js";
-import { buildListQuery, buildSearchQuery, escapeSql } from "../utils/index.js";
+import { buildListQuery, buildSearchQuery } from "../utils/index.js";
 
 const API_KEY = "account";
 const LIST_FIELDS = ["id", "accountName", "phone", "industry", "createdAt"];
 const SEARCH_FIELDS = ["accountName"];
+const SORTABLE_FIELDS = ["id", "accountName", "createdAt"];
 
 interface CmdOpts {
   format: "json" | "table" | "raw";
@@ -28,10 +29,11 @@ interface CmdOpts {
   order?: string;
 }
 
-function fmt(opts: CmdOpts) { return opts.format; }
-function fld(opts: CmdOpts) { return opts.fields?.split(",").map(s => s.trim()).filter(Boolean); }
-function data(opts: CmdOpts) { return JSON.parse(opts.data || "{}"); }
-function err(e: unknown) { const m = classifyError(e); console.log(JSON.stringify({ status: "error", message: m.message })); process.exitCode = 1; }
+function resolveSort(sort?: string, order?: string): string | undefined {
+  if (!sort || !SORTABLE_FIELDS.includes(sort)) return undefined;
+  const dir = order === "asc" ? "asc" : "desc";
+  return `${sort} ${dir}`;
+}
 
 export function registerAccountCommands(parent: Command): void {
   const acct = parent.command("account").description("客户操作");
@@ -44,18 +46,20 @@ export function registerAccountCommands(parent: Command): void {
     .option("--page <n>", "页码", "1")
     .option("--size <n>", "每页条数", "20")
     .option("--sort <field>", "排序字段")
-    .option("--order <asc|desc>", "排序方向")
+    .option("--order <asc|desc>", "排序方向", "desc")
     .action(withAuth(async (opts: CmdOpts) => {
       try {
         const page = parseInt(opts.page || "1");
         const size = parseInt(opts.size || "20");
         const offset = (page - 1) * size;
-        const orderBy = opts.sort ? `order by ${opts.sort}` : undefined;
-        const orderDir = opts.order ? ` ${opts.order}` : "";
-        const sql = buildListQuery(API_KEY, LIST_FIELDS, { offset, size, order: orderBy ? `${orderBy}${orderDir}` : undefined });
+        const orderBy = resolveSort(opts.sort, opts.order);
+        const sql = buildListQuery(API_KEY, LIST_FIELDS, {
+          offset, size,
+          order: orderBy ? `order by ${orderBy}` : undefined,
+        });
         const resp = await queryObjects(sql);
-        console.log(formatOutput(resp, { format: fmt(opts), fields: fld(opts) }));
-      } catch (e) { err(e); }
+        console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
+      } catch (e) { handleError(e); }
     }));
 
   // search
@@ -68,8 +72,8 @@ export function registerAccountCommands(parent: Command): void {
       try {
         const sql = buildSearchQuery(API_KEY, LIST_FIELDS, kw, SEARCH_FIELDS);
         const resp = await queryObjects(sql);
-        console.log(formatOutput(resp, { format: fmt(opts), fields: fld(opts) }));
-      } catch (e) { err(e); }
+        console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
+      } catch (e) { handleError(e); }
     }));
 
   // get
@@ -81,8 +85,8 @@ export function registerAccountCommands(parent: Command): void {
     .action(withAuth(async (id: string, opts: CmdOpts) => {
       try {
         const resp = await getObject(API_KEY, id);
-        console.log(formatOutput(resp, { format: fmt(opts), fields: fld(opts) }));
-      } catch (e) { err(e); }
+        console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
+      } catch (e) { handleError(e); }
     }));
 
   // create
@@ -92,9 +96,9 @@ export function registerAccountCommands(parent: Command): void {
     .option("--format <format>", "输出格式", "json")
     .action(withAuth(async (opts: CmdOpts) => {
       try {
-        const resp = await createObject(API_KEY, data(opts));
+        const resp = await createObject(API_KEY, parseData(opts));
         console.log(formatOutput(resp, { format: fmt(opts) }));
-      } catch (e) { err(e); }
+      } catch (e) { handleError(e); }
     }));
 
   // update
@@ -105,9 +109,9 @@ export function registerAccountCommands(parent: Command): void {
     .option("--format <format>", "输出格式", "json")
     .action(withAuth(async (id: string, opts: CmdOpts) => {
       try {
-        const resp = await updateObject(API_KEY, id, data(opts));
+        const resp = await updateObject(API_KEY, id, parseData(opts));
         console.log(formatOutput(resp, { format: fmt(opts) }));
-      } catch (e) { err(e); }
+      } catch (e) { handleError(e); }
     }));
 
   // delete
@@ -124,6 +128,6 @@ export function registerAccountCommands(parent: Command): void {
       try {
         const resp = await deleteObject(API_KEY, id);
         console.log(formatOutput(resp, { format: fmt(opts) }));
-      } catch (e) { err(e); }
+      } catch (e) { handleError(e); }
     }));
 }

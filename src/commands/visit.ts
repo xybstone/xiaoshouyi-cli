@@ -3,7 +3,7 @@
 import { Command } from "commander";
 import { withAuth } from "../middleware/auth-check.js";
 import { formatOutput } from "../api/format.js";
-import { classifyError } from "../api/errors.js";
+import { fmt, parseFields, parseData, handleError } from "./shared.js";
 import {
   getObject,
   createObject,
@@ -22,11 +22,6 @@ interface CmdOpts {
   size?: string;
 }
 
-function fmt(opts: CmdOpts) { return opts.format; }
-function fld(opts: CmdOpts) { return opts.fields?.split(",").map(s => s.trim()).filter(Boolean); }
-function data(opts: CmdOpts) { return JSON.parse(opts.data || "{}"); }
-function err(e: unknown) { const m = classifyError(e); console.log(JSON.stringify({ status: "error", message: m.message })); process.exitCode = 1; }
-
 export function registerVisitCommands(parent: Command): void {
   const visit = parent.command("visit").description("跟进操作");
 
@@ -44,8 +39,8 @@ export function registerVisitCommands(parent: Command): void {
         const offset = (page - 1) * size;
         const sql = buildListQuery(API_KEY, LIST_FIELDS, { offset, size });
         const resp = await queryObjects(sql);
-        console.log(formatOutput(resp, { format: fmt(opts), fields: fld(opts) }));
-      } catch (e) { err(e); }
+        console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
+      } catch (e) { handleError(e); }
     }));
 
   // get
@@ -57,8 +52,8 @@ export function registerVisitCommands(parent: Command): void {
     .action(withAuth(async (id: string, opts: CmdOpts) => {
       try {
         const resp = await getObject(API_KEY, id);
-        console.log(formatOutput(resp, { format: fmt(opts), fields: fld(opts) }));
-      } catch (e) { err(e); }
+        console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
+      } catch (e) { handleError(e); }
     }));
 
   // create
@@ -68,8 +63,8 @@ export function registerVisitCommands(parent: Command): void {
     .option("--format <format>", "输出格式", "json")
     .action(withAuth(async (opts: CmdOpts) => {
       try {
-        const resp = await createObject(API_KEY, data(opts));
+        const resp = await createObject(API_KEY, parseData(opts));
         console.log(formatOutput(resp, { format: fmt(opts) }));
-      } catch (e) { err(e); }
+      } catch (e) { handleError(e); }
     }));
 }

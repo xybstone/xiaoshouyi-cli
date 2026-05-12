@@ -1,9 +1,9 @@
-// opportunity 语义别名命令 — list / search / get / create / update / delete + stage list
+// opportunity 语义别名命令 — list / search / get / create / update / delete + stages
 
 import { Command } from "commander";
 import { withAuth } from "../middleware/auth-check.js";
 import { formatOutput } from "../api/format.js";
-import { classifyError } from "../api/errors.js";
+import { fmt, parseFields, parseData, handleError } from "./shared.js";
 import {
   getObject,
   createObject,
@@ -26,11 +26,6 @@ interface CmdOpts {
   size?: string;
 }
 
-function fmt(opts: CmdOpts) { return opts.format; }
-function fld(opts: CmdOpts) { return opts.fields?.split(",").map(s => s.trim()).filter(Boolean); }
-function data(opts: CmdOpts) { return JSON.parse(opts.data || "{}"); }
-function err(e: unknown) { const m = classifyError(e); console.log(JSON.stringify({ status: "error", message: m.message })); process.exitCode = 1; }
-
 export function registerOpportunityCommands(parent: Command): void {
   const opp = parent.command("opportunity").description("商机操作");
 
@@ -48,8 +43,8 @@ export function registerOpportunityCommands(parent: Command): void {
         const offset = (page - 1) * size;
         const sql = buildListQuery(API_KEY, LIST_FIELDS, { offset, size });
         const resp = await queryObjects(sql);
-        console.log(formatOutput(resp, { format: fmt(opts), fields: fld(opts) }));
-      } catch (e) { err(e); }
+        console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
+      } catch (e) { handleError(e); }
     }));
 
   // search
@@ -62,8 +57,8 @@ export function registerOpportunityCommands(parent: Command): void {
       try {
         const sql = buildSearchQuery(API_KEY, LIST_FIELDS, kw, SEARCH_FIELDS);
         const resp = await queryObjects(sql);
-        console.log(formatOutput(resp, { format: fmt(opts), fields: fld(opts) }));
-      } catch (e) { err(e); }
+        console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
+      } catch (e) { handleError(e); }
     }));
 
   // get
@@ -75,8 +70,8 @@ export function registerOpportunityCommands(parent: Command): void {
     .action(withAuth(async (id: string, opts: CmdOpts) => {
       try {
         const resp = await getObject(API_KEY, id);
-        console.log(formatOutput(resp, { format: fmt(opts), fields: fld(opts) }));
-      } catch (e) { err(e); }
+        console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
+      } catch (e) { handleError(e); }
     }));
 
   // create
@@ -86,9 +81,9 @@ export function registerOpportunityCommands(parent: Command): void {
     .option("--format <format>", "输出格式", "json")
     .action(withAuth(async (opts: CmdOpts) => {
       try {
-        const resp = await createObject(API_KEY, data(opts));
+        const resp = await createObject(API_KEY, parseData(opts));
         console.log(formatOutput(resp, { format: fmt(opts) }));
-      } catch (e) { err(e); }
+      } catch (e) { handleError(e); }
     }));
 
   // update
@@ -99,9 +94,9 @@ export function registerOpportunityCommands(parent: Command): void {
     .option("--format <format>", "输出格式", "json")
     .action(withAuth(async (id: string, opts: CmdOpts) => {
       try {
-        const resp = await updateObject(API_KEY, id, data(opts));
+        const resp = await updateObject(API_KEY, id, parseData(opts));
         console.log(formatOutput(resp, { format: fmt(opts) }));
-      } catch (e) { err(e); }
+      } catch (e) { handleError(e); }
     }));
 
   // delete
@@ -118,18 +113,17 @@ export function registerOpportunityCommands(parent: Command): void {
       try {
         const resp = await deleteObject(API_KEY, id);
         console.log(formatOutput(resp, { format: fmt(opts) }));
-      } catch (e) { err(e); }
+      } catch (e) { handleError(e); }
     }));
 
-  // stage list
-  opp.command("stage")
-    .command("list")
+  // stages
+  opp.command("stages")
     .description("商机阶段定义")
     .option("--format <format>", "输出格式", "json")
     .action(withAuth(async (opts: CmdOpts) => {
       try {
         const resp = await queryObjects("select id,name,orderNum from oppProcess order by id");
         console.log(formatOutput(resp, { format: fmt(opts) }));
-      } catch (e) { err(e); }
+      } catch (e) { handleError(e); }
     }));
 }
