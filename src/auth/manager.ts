@@ -119,6 +119,10 @@ export class AuthManager {
     this.storage.write(state);
   }
 
+  getApiBaseUrl(): string {
+    return this.state?.apiBaseUrl ?? API_BASE_URL;
+  }
+
   getStatus(): { authenticated: boolean; tenantId?: string; expiresAt?: number } {
     if (!this.state) return { authenticated: false };
     return {

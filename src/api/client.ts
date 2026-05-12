@@ -2,7 +2,8 @@
 
 import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { getAuthManager } from "../auth/manager.js";
-import { DEFAULT_TIMEOUT, API_BASE_URL } from "../config.js";
+import { DEFAULT_TIMEOUT } from "../config.js";
+import { AuthError } from "./errors.js";
 
 // 可重试的请求标记 — 避免无限循环
 interface RetryableConfig extends InternalAxiosRequestConfig {
@@ -29,12 +30,8 @@ export function getApiClient(): AxiosInstance {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // 动态设置 baseURL：优先使用 auth state 中的 apiBaseUrl
-    const state = manager.getStatus();
-    // getStatus() 不返回 apiBaseUrl... 需要用另一种方式
-    // 我们用 manager 内部 state 或者直接读取存储
-    // 简化：从 config.ts 默认 + 环境变量覆盖
-    const baseUrl = process.env.XSY_API_BASE_URL || API_BASE_URL;
+    // 动态设置 baseURL：优先环境变量 > auth state 中的租户 API 地址
+    const baseUrl = process.env.XSY_API_BASE_URL || manager.getApiBaseUrl();
     config.baseURL = baseUrl;
 
     return config;
@@ -60,8 +57,8 @@ export function getApiClient(): AxiosInstance {
           }
           return client(config);
         } catch {
-          // 刷新失败，清除凭据并抛出 auth 错误
           manager.logout();
+          return Promise.reject(new AuthError("Token 刷新失败，请重新登录: xsy auth login"));
         }
       }
 

@@ -17,7 +17,6 @@ export function formatOutput(
   options: FormatOptions
 ): string {
   if (response.code !== 200) {
-    // 错误响应统一 JSON 输出
     return JSON.stringify({ code: response.code, msg: response.msg }, null, 2);
   }
 
@@ -25,7 +24,7 @@ export function formatOutput(
 
   switch (options.format) {
     case "json":
-      return JSON.stringify(result, null, 2);
+      return JSON.stringify({ code: 200, result }, null, 2);
     case "table":
       return formatAsTable(result, options.fields);
     case "raw":
@@ -33,7 +32,7 @@ export function formatOutput(
       if (Array.isArray(result)) return result.map(String).join("\n");
       return JSON.stringify(result);
     default:
-      return JSON.stringify(result, null, 2);
+      return JSON.stringify({ code: 200, result }, null, 2);
   }
 }
 
@@ -42,29 +41,25 @@ function formatAsTable(
   result: unknown,
   fields?: string[]
 ): string {
-  // 列表查询结果: { totalSize, count, records: [...] }
-  if (result && typeof result === "object") {
-    const obj = result as Record<string, unknown>;
-    if (Array.isArray(obj.records)) {
-      return formatTableRows(obj.records as Record<string, unknown>[], fields)
-        + `\n(${obj.count ?? 0} of ${obj.totalSize ?? 0} records)`;
-    }
-  }
+  if (!result || typeof result !== "object") return String(result);
 
-  // 单条记录: { id, field1, field2, ... }
-  if (result && typeof result === "object" && !Array.isArray(result)) {
-    const obj = result as Record<string, unknown>;
-    if (Object.keys(obj).length > 0) {
-      return formatTableRows([obj], fields);
-    }
-  }
-
-  // 数组
   if (Array.isArray(result)) {
     return formatTableRows(result as Record<string, unknown>[], fields);
   }
 
-  // fallback
+  const obj = result as Record<string, unknown>;
+
+  // 列表查询结果: { totalSize, count, records: [...] }
+  if (Array.isArray(obj.records)) {
+    return formatTableRows(obj.records as Record<string, unknown>[], fields)
+      + `\n(${obj.count ?? 0} of ${obj.totalSize ?? 0} records)`;
+  }
+
+  // 单条记录
+  if (Object.keys(obj).length > 0) {
+    return formatTableRows([obj], fields);
+  }
+
   return String(result);
 }
 
