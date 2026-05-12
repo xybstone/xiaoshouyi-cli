@@ -1,6 +1,7 @@
 // xiaoshouyi-cli 主入口 — Commander CLI 组装
 
 import { Command } from "commander";
+import { registerAuthCommands } from "./commands/auth.js";
 
 const program = new Command();
 
@@ -17,6 +18,7 @@ program
   .option("--dry-run", "预览不执行")
   .option("--timeout <seconds>", "HTTP 超时（秒）", "30");
 
-// ---- 占位：后续 Phase 逐步添加子命令 ----
+// ---- Phase 2: 认证 ----
+registerAuthCommands(program);
 
 program.parse();
