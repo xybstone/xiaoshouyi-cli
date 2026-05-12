@@ -67,7 +67,8 @@ where stage = '商务谈判' and money > 50000
 
 ## ORDER BY
 
-- 仅支持 `id` 字段排序
+- 语义命令（account list）通过 `--sort` 白名单支持有限字段（id/accountName/createdAt）
+- 通用 `xsy query` 命令可直接传任意字段名，无此限制
 - 默认升序，可指定 `asc` / `desc`
 
 ```sql

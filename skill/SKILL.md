@@ -35,7 +35,7 @@ export XSY_SECURITY_TOKEN=xxxxxx  # 8位安全令牌
 xsy auth login
 ```
 
-> password = 用户密码 + 8位安全令牌（直接拼接，无分隔符）
+> 交互式登录时 password 输入 = 用户密码 + 8位安全令牌（直接拼接）；环境变量方式则分别传入 XSY_PASSWORD 和 XSY_SECURITY_TOKEN
 
 ## 意图路由
 
@@ -105,7 +105,7 @@ xsy account list --format table --fields id,accountName
 
 - select 不支持 `*`，必须列出具体字段
 - like 仅支持后缀通配: `field like 'value%'`
-- order by 仅支持 `id` 字段
+- order by 因对象而异（account list 支持 id/accountName/createdAt 白名单），通用 query 命令无此限制
 - 每次查询限制 100 条，分页使用 `limit offset,size`
 
 ### 环境变量安全

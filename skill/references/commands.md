@@ -85,7 +85,7 @@ xsy schema <path>       命令路径 schema（预留）
 | `XSY_CLIENT_ID` | OAuth2 client_id |
 | `XSY_CLIENT_SECRET` | OAuth2 client_secret |
 | `XSY_USERNAME` | 用户名 |
-| `XSY_PASSWORD` | 密码（不含安全令牌） |
+| `XSY_PASSWORD` | 用户密码（不含安全令牌，令牌单独通过 XSY_SECURITY_TOKEN 传入） |
 | `XSY_SECURITY_TOKEN` | 8位安全令牌 |
 | `XSY_ACCESS_TOKEN` | 直接注入 token，跳过 OAuth |
 | `XSY_API_BASE_URL` | API 地址（多租户） |
