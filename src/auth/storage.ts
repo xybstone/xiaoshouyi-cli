@@ -19,13 +19,17 @@ export interface AuthStorage {
 const KEYCHAIN_SERVICE = "xiaoshouyi-cli";
 const KEYCHAIN_ACCOUNT = "auth";
 
+let _keychainAvailable: boolean | null = null;
+
 function keychainAvailable(): boolean {
+  if (_keychainAvailable !== null) return _keychainAvailable;
   try {
     execSync("security -v", { stdio: "ignore" });
-    return process.platform === "darwin";
+    _keychainAvailable = process.platform === "darwin";
   } catch {
-    return false;
+    _keychainAvailable = false;
   }
+  return _keychainAvailable;
 }
 
 export class KeychainStorage implements AuthStorage {
@@ -46,16 +50,10 @@ export class KeychainStorage implements AuthStorage {
   write(state: AuthState): void {
     if (!keychainAvailable()) return;
     const json = JSON.stringify(state);
-    // remove existing entry first to avoid duplicates
-    try {
-      execSync(
-        `security delete-generic-password -s "${KEYCHAIN_SERVICE}" -a "${KEYCHAIN_ACCOUNT}"`,
-        { stdio: "ignore" }
-      );
-    } catch { /* not found, ok */ }
+    // -U (upsert) handles create-or-update, no need for manual delete
     execSync(
-      `security add-generic-password -s "${KEYCHAIN_SERVICE}" -a "${KEYCHAIN_ACCOUNT}" -w '${json.replace(/'/g, "'\\''")}' -U`,
-      { stdio: "ignore" }
+      `security add-generic-password -s "${KEYCHAIN_SERVICE}" -a "${KEYCHAIN_ACCOUNT}" -w - -U`,
+      { input: json, stdio: ["pipe", "ignore", "ignore"] }
     );
   }
 

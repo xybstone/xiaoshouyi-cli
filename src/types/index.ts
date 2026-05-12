@@ -38,6 +38,8 @@ export interface AuthState {
   expiresAt: number; // unix timestamp ms
   apiBaseUrl: string;
   tenantId?: string;
+  clientId: string;
+  clientSecret: string;
 }
 
 export interface AuthConfig {

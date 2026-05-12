@@ -76,6 +76,8 @@ export class AuthManager {
       expiresAt: Date.now() + data.expires_in * 1000,
       apiBaseUrl: data.api_base_url || "https://api.xiaoshouyi.com",
       tenantId: data.tenant_id,
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
     };
 
     this.state = state;
@@ -90,6 +92,8 @@ export class AuthManager {
 
     const params = new URLSearchParams();
     params.append("grant_type", "refresh_token");
+    params.append("client_id", this.state.clientId);
+    params.append("client_secret", this.state.clientSecret);
     params.append("refresh_token", this.state.refreshToken);
 
     const response = await axios.get<TokenResponse>(
@@ -107,6 +111,8 @@ export class AuthManager {
       expiresAt: Date.now() + data.expires_in * 1000,
       apiBaseUrl: data.api_base_url || this.state.apiBaseUrl,
       tenantId: data.tenant_id ?? this.state.tenantId,
+      clientId: this.state.clientId,
+      clientSecret: this.state.clientSecret,
     };
 
     this.state = state;

@@ -2,9 +2,10 @@
 
 import { getAuthManager } from "../auth/manager.js";
 
-export function requireAuth(): void {
+export async function requireAuth(): Promise<void> {
   const manager = getAuthManager();
-  if (!manager.isAuthenticated()) {
+  const token = await manager.getToken();
+  if (!token) {
     console.error(JSON.stringify({
       status: "error",
       message: "未登录，请先运行: xsy auth login",
@@ -16,9 +17,9 @@ export function requireAuth(): void {
 // 包装一个 action handler，在执行前检查认证
 export function withAuth<T extends unknown[]>(
   fn: (...args: T) => void | Promise<void>
-): (...args: T) => void | Promise<void> {
-  return (...args: T) => {
-    requireAuth();
+): (...args: T) => Promise<void> {
+  return async (...args: T) => {
+    await requireAuth();
     return fn(...args);
   };
 }
