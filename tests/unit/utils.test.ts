@@ -73,9 +73,7 @@ describe("buildSearchQuery", () => {
       "select id,accountName,phone from account where accountName like 'test%' or phone like 'test%'"
     );
   });
-});
 
-describe("buildSearchQuery", () => {
   it("escapes quotes in keyword", () => {
     const sql = buildSearchQuery("account", ["id"], "it's", ["accountName"]);
     expect(sql).toBe("select id from account where accountName like 'it''s%'");
