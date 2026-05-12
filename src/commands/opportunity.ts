@@ -14,7 +14,7 @@ import {
 import { buildListQuery, buildSearchQuery } from "../utils/index.js";
 
 const API_KEY = "opportunity";
-const LIST_FIELDS = ["id", "opportunityName", "customerId", "stage", "money", "createdAt"];
+const LIST_FIELDS = ["id", "opportunityName", "money", "createdAt"];
 const SEARCH_FIELDS = ["opportunityName"];
 
 interface CmdOpts {
@@ -122,7 +122,7 @@ export function registerOpportunityCommands(parent: Command): void {
     .option("--format <format>", "输出格式", "json")
     .action(withAuth(async (opts: CmdOpts) => {
       try {
-        const resp = await queryObjects("select id,name,orderNum from oppProcess order by id");
+        const resp = await queryObjects("select id,name from oppProcess order by id");
         console.log(formatOutput(resp, { format: fmt(opts) }));
       } catch (e) { handleError(e); }
     }));

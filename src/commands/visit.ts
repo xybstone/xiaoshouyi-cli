@@ -12,7 +12,7 @@ import {
 import { buildListQuery } from "../utils/index.js";
 
 const API_KEY = "visitRecord";
-const LIST_FIELDS = ["id", "content", "visitDate", "customerId", "creator"];
+const LIST_FIELDS = ["id", "createdAt"];
 
 interface CmdOpts {
   format: "json" | "table" | "raw";

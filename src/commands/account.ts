@@ -14,7 +14,7 @@ import {
 import { buildListQuery, buildSearchQuery } from "../utils/index.js";
 
 const API_KEY = "account";
-const LIST_FIELDS = ["id", "accountName", "phone", "industry", "createdAt"];
+const LIST_FIELDS = ["id", "accountName", "phone", "createdAt"];
 const SEARCH_FIELDS = ["accountName"];
 const SORTABLE_FIELDS = ["id", "accountName", "createdAt"];
 
