@@ -2,6 +2,7 @@
 
 import { Command } from "commander";
 import { registerAuthCommands } from "./commands/auth.js";
+import { registerCrudCommands } from "./commands/crud.js";
 
 const program = new Command();
 
@@ -20,5 +21,8 @@ program
 
 // ---- Phase 2: 认证 ----
 registerAuthCommands(program);
+
+// ---- Phase 4: 通用 CRUD ----
+registerCrudCommands(program);
 
 program.parse();
