@@ -1,0 +1,61 @@
+// 销售易 API 通用响应结构
+
+export interface ApiResponse<T = unknown> {
+  code: number;
+  msg: string;
+  result: T;
+  ext?: unknown[];
+}
+
+export interface QueryResult<T = Record<string, unknown>> {
+  totalSize: number;
+  count: number;
+  records: T[];
+}
+
+export interface DescribeField {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  creatable: boolean;
+  updatable: boolean;
+  referToObjectApiKey?: string;
+  options?: { label: string; value: string }[];
+}
+
+export interface DescribeResult {
+  apiKey: string;
+  label: string;
+  fields: DescribeField[];
+}
+
+// 认证状态
+
+export interface AuthState {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number; // unix timestamp ms
+  apiBaseUrl: string;
+  tenantId?: string;
+}
+
+export interface AuthConfig {
+  clientId: string;
+  clientSecret: string;
+  username: string;
+  password: string; // 含安全令牌拼接
+}
+
+// CLI 全局选项
+
+export interface GlobalOptions {
+  format: "json" | "table" | "raw";
+  jq?: string;
+  fields?: string[];
+  verbose: boolean;
+  debug: boolean;
+  yes: boolean;
+  dryRun: boolean;
+  timeout: number;
+}
