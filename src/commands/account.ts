@@ -55,7 +55,7 @@ export function registerAccountCommands(parent: Command): void {
         const orderBy = resolveSort(opts.sort, opts.order);
         const sql = buildListQuery(API_KEY, LIST_FIELDS, {
           offset, size,
-          order: orderBy ? `order by ${orderBy}` : undefined,
+          order: orderBy,  // e.g. "id desc" — buildListQuery 会加 order by
         });
         const resp = await queryObjects(sql);
         console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
