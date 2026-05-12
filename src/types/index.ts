@@ -14,7 +14,7 @@ export interface QueryResult<T = Record<string, unknown>> {
 }
 
 export interface DescribeField {
-  name: string;
+  propertyname: string;
   label: string;
   type: string;
   required: boolean;
@@ -52,7 +52,7 @@ export interface AuthConfig {
 export interface GlobalOptions {
   format: "json" | "table" | "raw";
   jq?: string;
-  fields?: string[];
+  fields?: string;  // Commander --fields 解析为逗号分隔字符串
   verbose: boolean;
   debug: boolean;
   yes: boolean;

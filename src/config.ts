@@ -1,3 +1,5 @@
+import os from "node:os";
+
 // 常量配置：API URL、apiKey 映射等
 
 export const API_BASE_URL = "https://api.xiaoshouyi.com";
@@ -11,7 +13,7 @@ export const DEFAULT_TIMEOUT = 30_000; // 30s
 export const TOKEN_REFRESH_MARGIN = 60_000; // 过期前 1 分钟刷新
 
 // 凭据存储路径
-export const CONFIG_DIR = `${process.env.HOME || "~"}/.config/xiaoshouyi-cli`;
+export const CONFIG_DIR = `${os.homedir()}/.config/xiaoshouyi-cli`;
 export const AUTH_FILE = `${CONFIG_DIR}/auth.json`;
 
 // 常用业务对象 apiKey 映射

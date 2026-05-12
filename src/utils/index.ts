@@ -1,6 +1,6 @@
 // 工具函数
 
-import type { QueryResult, ApiResponse } from "./types/index.js";
+import type { ApiResponse } from "../types/index.js";
 
 export function isApiError(
   response: ApiResponse
@@ -70,6 +70,32 @@ export function paginateResults<T>(
   };
 }
 
+export function charWidth(str: string): number {
+  let w = 0;
+  for (const ch of str) {
+    const cp = ch.codePointAt(0)!;
+    // CJK Unified Ideographs, CJK Extension A, CJK Compatibility Ideographs,
+    // and fullwidth forms (FF01-FF60, FFE0-FFE6)
+    if (
+      (cp >= 0x4e00 && cp <= 0x9fff) ||
+      (cp >= 0x3400 && cp <= 0x4dbf) ||
+      (cp >= 0xf900 && cp <= 0xfaff) ||
+      (cp >= 0xff01 && cp <= 0xff60) ||
+      (cp >= 0xffe0 && cp <= 0xffe6)
+    ) {
+      w += 2;
+    } else {
+      w += 1;
+    }
+  }
+  return w;
+}
+
+function padEndCJK(str: string, width: number): string {
+  const need = width - charWidth(str);
+  return str + " ".repeat(Math.max(0, need));
+}
+
 export function formatTable(rows: Record<string, unknown>[]): string {
   if (rows.length === 0) return "(empty)";
 
@@ -78,20 +104,20 @@ export function formatTable(rows: Record<string, unknown>[]): string {
 
   for (const key of keys) {
     widths[key] = Math.max(
-      key.length,
-      ...rows.map((r) => String(r[key] ?? "").length)
+      charWidth(key),
+      ...rows.map((r) => charWidth(String(r[key] ?? "")))
     );
   }
 
   const header =
-    "| " + keys.map((k) => k.padEnd(widths[k])).join(" | ") + " |";
+    "| " + keys.map((k) => padEndCJK(k, widths[k])).join(" | ") + " |";
   const separator =
     "|-" + keys.map((k) => "-".repeat(widths[k])).join("-|-") + "-|";
   const body = rows
     .map(
       (r) =>
         "| " +
-        keys.map((k) => String(r[k] ?? "").padEnd(widths[k])).join(" | ") +
+        keys.map((k) => padEndCJK(String(r[k] ?? ""), widths[k])).join(" | ") +
         " |"
     )
     .join("\n");
