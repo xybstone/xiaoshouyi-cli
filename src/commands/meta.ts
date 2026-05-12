@@ -6,7 +6,7 @@ import { API_KEY_MAP } from "../config.js";
 // 收集所有已注册的命令信息
 function collectCommands(cmd: Command): { name: string; description: string; subcommands: ReturnType<typeof collectCommands>[] }[] {
   const result: ReturnType<typeof collectCommands>[] = [];
-  for (const c of (cmd as unknown as { commands: Command[] }).commands || []) {
+  for (const c of cmd.commands) {
     result.push({
       name: c.name(),
       description: c.description(),
@@ -41,7 +41,8 @@ export function registerMetaCommands(parent: Command): void {
     .action((path?: string) => {
       if (path) {
         console.log(JSON.stringify({
-          message: `Schema for '${path}' not yet implemented. Use 'xsy <command> --help' for option details.`,
+          message: "Schema path lookup not yet implemented. Use `xsy <command> --help` for option details.",
+          path,
         }));
         return;
       }
