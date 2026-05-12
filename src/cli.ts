@@ -6,6 +6,7 @@ import { registerCrudCommands } from "./commands/crud.js";
 import { registerAccountCommands } from "./commands/account.js";
 import { registerOpportunityCommands } from "./commands/opportunity.js";
 import { registerVisitCommands } from "./commands/visit.js";
+import { registerMetaCommands } from "./commands/meta.js";
 
 const program = new Command();
 
@@ -32,5 +33,8 @@ registerCrudCommands(program);
 registerAccountCommands(program);
 registerOpportunityCommands(program);
 registerVisitCommands(program);
+
+// ---- Phase 6: CLI 组装 ----
+registerMetaCommands(program);
 
 program.parse();
