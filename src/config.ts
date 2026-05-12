@@ -7,6 +7,7 @@ export const AUTH_BASE_URL = "https://login.xiaoshouyi.com";
 
 export const API_PREFIX = "/rest/data/v2";
 export const API_OBJECTS_PREFIX = `${API_PREFIX}/objects`;
+export const QUERY_PATH = `${API_PREFIX}/query`;
 export const DESCRIBE_PREFIX = "/rest/data/v2.0/xobjects";
 
 export const DEFAULT_TIMEOUT = 30_000; // 30s

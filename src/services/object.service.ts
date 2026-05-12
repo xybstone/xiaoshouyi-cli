@@ -3,15 +3,15 @@
 import { getApiClient } from "../api/client.js";
 import { classifyError } from "../api/errors.js";
 import type { ApiResponse, DescribeResult, QueryResult } from "../types/index.js";
-import { API_OBJECTS_PREFIX, DESCRIBE_PREFIX } from "../config.js";
+import { API_OBJECTS_PREFIX, DESCRIBE_PREFIX, QUERY_PATH } from "../config.js";
 
 // 获取对象字段元数据
 export async function describeObject(
   apiKey: string
-): Promise<DescribeResult> {
+): Promise<ApiResponse<DescribeResult>> {
   try {
     const client = getApiClient();
-    const response = await client.get<DescribeResult>(
+    const response = await client.get<ApiResponse<DescribeResult>>(
       `${DESCRIBE_PREFIX}/${apiKey}/description`
     );
     return response.data;
@@ -94,7 +94,7 @@ export async function queryObjects(
   try {
     const client = getApiClient();
     const response = await client.get<ApiResponse<QueryResult>>(
-      "/rest/data/v2/query",
+      QUERY_PATH,
       { params: { q: sql } }
     );
     return response.data;

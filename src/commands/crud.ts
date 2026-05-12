@@ -12,17 +12,12 @@ import {
   deleteObject,
   queryObjects,
 } from "../services/object.service.js";
-import type { ApiResponse } from "../types/index.js";
 
 interface CrudOptions {
   format: "json" | "table" | "raw";
   fields?: string;
   data?: string;
   yes?: boolean;
-}
-
-function resolveFormat(opts: CrudOptions): "json" | "table" | "raw" {
-  return opts.format || "json";
 }
 
 function parseFields(opts: CrudOptions): string[] | undefined {
@@ -56,7 +51,7 @@ export function registerCrudCommands(parent: Command): void {
         try {
           const response = await queryObjects(sql);
           const fields = parseFields(opts);
-          const output = formatOutput(response, { format: resolveFormat(opts), fields });
+          const output = formatOutput(response, { format: opts.format, fields });
           console.log(output);
         } catch (err) {
           handleError(err);
@@ -74,10 +69,9 @@ export function registerCrudCommands(parent: Command): void {
     .action(
       withAuth(async (apiKey: string, opts: CrudOptions) => {
         try {
-          const result = await describeObject(apiKey);
-          const response: ApiResponse = { code: 200, msg: "操作成功", result };
+          const response = await describeObject(apiKey);
           const fields = parseFields(opts);
-          const output = formatOutput(response, { format: resolveFormat(opts), fields });
+          const output = formatOutput(response, { format: opts.format, fields });
           console.log(output);
         } catch (err) {
           handleError(err);
@@ -98,7 +92,7 @@ export function registerCrudCommands(parent: Command): void {
         try {
           const response = await getObject(apiKey, id);
           const fields = parseFields(opts);
-          const output = formatOutput(response, { format: resolveFormat(opts), fields });
+          const output = formatOutput(response, { format: opts.format, fields });
           console.log(output);
         } catch (err) {
           handleError(err);
@@ -118,7 +112,7 @@ export function registerCrudCommands(parent: Command): void {
         try {
           const data = parseData(opts);
           const response = await createObject(apiKey, data);
-          const output = formatOutput(response, { format: resolveFormat(opts) });
+          const output = formatOutput(response, { format: opts.format });
           console.log(output);
         } catch (err) {
           handleError(err);
@@ -139,7 +133,7 @@ export function registerCrudCommands(parent: Command): void {
         try {
           const data = parseData(opts);
           const response = await updateObject(apiKey, id, data);
-          const output = formatOutput(response, { format: resolveFormat(opts) });
+          const output = formatOutput(response, { format: opts.format });
           console.log(output);
         } catch (err) {
           handleError(err);
@@ -153,13 +147,21 @@ export function registerCrudCommands(parent: Command): void {
     .description("删除记录（不可逆）")
     .argument("<apiKey>", "对象 apiKey")
     .argument("<id>", "记录 ID")
-    .requiredOption("-y, --yes", "确认删除")
+    .option("-y, --yes", "确认删除（必须提供）")
     .option("--format <format>", "输出格式", "json")
     .action(
       withAuth(async (apiKey: string, id: string, opts: CrudOptions) => {
+        if (!opts.yes) {
+          console.log(JSON.stringify({
+            status: "error",
+            message: `危险操作：将删除 ${apiKey}/${id}，请加 --yes 确认`,
+          }));
+          process.exitCode = 1;
+          return;
+        }
         try {
           const response = await deleteObject(apiKey, id);
-          const output = formatOutput(response, { format: resolveFormat(opts) });
+          const output = formatOutput(response, { format: opts.format });
           console.log(output);
         } catch (err) {
           handleError(err);
