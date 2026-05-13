@@ -24,7 +24,6 @@
     "ai-agent"
   ],
   "license": "UNLICENSED",
-  "private": true,
   "engines": {
     "node": ">=22"
   },
