@@ -4,6 +4,7 @@ import os from "node:os";
 
 export const API_BASE_URL = "https://api.xiaoshouyi.com";
 export const AUTH_BASE_URL = "https://login.xiaoshouyi.com";
+export const CRM_BASE_URL = "https://crm.xiaoshouyi.com";
 
 export const API_PREFIX = "/rest/data/v2";
 export const API_OBJECTS_PREFIX = `${API_PREFIX}/objects`;
@@ -16,6 +17,7 @@ export const TOKEN_REFRESH_MARGIN = 60_000; // 过期前 1 分钟刷新
 // 凭据存储路径
 export const CONFIG_DIR = `${os.homedir()}/.config/xiaoshouyi-cli`;
 export const AUTH_FILE = `${CONFIG_DIR}/auth.json`;
+export const CRM_COOKIE_FILE = `${CONFIG_DIR}/crm-cookie.json`;
 
 // 常用业务对象 apiKey 映射
 export const API_KEY_MAP: Record<string, { label: string; apiKey: string }> = {

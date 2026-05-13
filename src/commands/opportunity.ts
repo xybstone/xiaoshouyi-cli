@@ -12,6 +12,7 @@ import {
   queryObjects,
 } from "../services/object.service.js";
 import { buildListQuery, buildSearchQuery } from "../utils/index.js";
+import { fetchActivityRecords, CRM_OBJECT_OPPORTUNITY } from "../api/crm-client.js";
 
 const API_KEY = "opportunity";
 const LIST_FIELDS = ["id", "opportunityName", "money", "createdAt"];
@@ -126,4 +127,21 @@ export function registerOpportunityCommands(parent: Command): void {
         console.log(formatOutput(resp, { format: fmt(opts) }));
       } catch (e) { handleError(e); }
     }));
+
+  // follows — 商机下的跟进记录
+  opp.command("follows")
+    .description("商机的跟进记录")
+    .argument("<id>", "商机 ID")
+    .option("--format <format>", "输出格式", "json")
+    .option("--fields <fields>", "输出字段")
+    .option("--page <n>", "页码", "1")
+    .option("--size <n>", "每页条数", "20")
+    .action(async (itemId: string, opts: CmdOpts) => {
+      try {
+        const page = parseInt(opts.page || "1");
+        const size = parseInt(opts.size || "20");
+        const resp = await fetchActivityRecords(CRM_OBJECT_OPPORTUNITY, itemId, page, size);
+        console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
+      } catch (e) { handleError(e); }
+    });
 }
