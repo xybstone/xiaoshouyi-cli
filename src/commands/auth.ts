@@ -79,10 +79,16 @@ export function registerAuthCommands(parent: Command): void {
   // ---- xsy auth crm-cookie ----
   auth
     .command("crm-cookie")
-    .description("保存 CRM 域 Cookie（从浏览器复制，用于跟进等操作）")
+    .description("保存/清除 CRM 域 Cookie（从浏览器复制，用于跟进等操作）")
     .option("--cookie <str>", "Cookie 字符串")
-    .action(async (opts: { cookie?: string }) => {
+    .option("--clear", "清除已保存的 CRM Cookie")
+    .action(async (opts: { cookie?: string; clear?: boolean }) => {
       const { saveCrmCookie, clearCrmCookie, hasCrmCookie } = await import("../api/crm-client.js");
+      if (opts.clear) {
+        clearCrmCookie();
+        console.log(JSON.stringify({ status: "ok", message: "CRM Cookie 已清除" }));
+        return;
+      }
       if (opts.cookie) {
         saveCrmCookie(opts.cookie);
         console.log(JSON.stringify({ status: "ok", message: "CRM Cookie 已保存" }));
@@ -95,6 +101,7 @@ export function registerAuthCommands(parent: Command): void {
           message: "请通过 --cookie 传入，或设置 XSY_CRM_COOKIE 环境变量",
           usage: "xsy auth crm-cookie --cookie '...'",
           hint: "在浏览器 F12 → Network → 复制任意请求的 Cookie 头",
+          clear: "xsy auth crm-cookie --clear",
           current: hasCrmCookie() ? "已配置" : "未配置",
         }));
         process.exitCode = 1;

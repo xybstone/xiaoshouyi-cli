@@ -12,7 +12,7 @@ import {
   queryObjects,
 } from "../services/object.service.js";
 import { buildListQuery, buildSearchQuery } from "../utils/index.js";
-import { fetchActivityRecords } from "../api/crm-client.js";
+import { fetchActivityRecords, CRM_OBJECT_ACCOUNT } from "../api/crm-client.js";
 
 const API_KEY = "account";
 const LIST_FIELDS = ["id", "accountName", "phone", "createdAt"];
@@ -144,7 +144,7 @@ export function registerAccountCommands(parent: Command): void {
       try {
         const page = parseInt(opts.page || "1");
         const size = parseInt(opts.size || "20");
-        const resp = await fetchActivityRecords(1, itemId, page, size);
+        const resp = await fetchActivityRecords(CRM_OBJECT_ACCOUNT, itemId, page, size);
         console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
       } catch (e) { handleError(e); }
     });

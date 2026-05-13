@@ -2,9 +2,14 @@
 // 用于获取跟进记录等 REST API 禁用的对象
 
 import fs from "node:fs";
+import path from "node:path";
 import axios from "axios";
 import { CRM_BASE_URL, CRM_COOKIE_FILE, DEFAULT_TIMEOUT } from "../config.js";
 import type { ApiResponse, QueryResult } from "../types/index.js";
+
+// CRM 对象类型常量
+export const CRM_OBJECT_ACCOUNT = 1;       // 客户
+export const CRM_OBJECT_OPPORTUNITY = 3;   // 销售机会
 
 // CRM 活动记录项
 interface CrmActivityRecord {
@@ -49,7 +54,7 @@ function getCrmCookie(): string | null {
 
 // 保存 CRM Cookie 到文件
 export function saveCrmCookie(cookie: string): void {
-  const dir = CRM_COOKIE_FILE.substring(0, CRM_COOKIE_FILE.lastIndexOf("/"));
+  const dir = path.dirname(CRM_COOKIE_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(CRM_COOKIE_FILE, JSON.stringify({
     cookie,
@@ -68,10 +73,7 @@ export function hasCrmCookie(): boolean {
 }
 
 // 获取活动记录（跟进列表）
-// objectId: 1=客户, 3=销售机会
-// itemId: 关联对象的 ID（必填）
-// pageNo: 页码
-// pageSize: 每页条数
+// 注：CRM API 不返回 totalSize，totalSize 当前页条数，hasMore 标记是否有下一页
 export async function fetchActivityRecords(
   objectId: number,
   itemId: string,
@@ -128,6 +130,8 @@ export async function fetchActivityRecords(
     }
   }
 
+  // 注：CRM API 不返回总数，totalSize 为当前页条数
+  // hasMore 透传到 ext 数组供调用方判断是否继续翻页
   return {
     code: 200,
     msg: "操作成功",
@@ -136,5 +140,6 @@ export async function fetchActivityRecords(
       count: records.length,
       records,
     },
+    ext: [{ hasMore: response.data.data?.hasMore ?? false }],
   };
 }

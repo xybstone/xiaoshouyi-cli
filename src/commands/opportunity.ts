@@ -12,7 +12,7 @@ import {
   queryObjects,
 } from "../services/object.service.js";
 import { buildListQuery, buildSearchQuery } from "../utils/index.js";
-import { fetchActivityRecords } from "../api/crm-client.js";
+import { fetchActivityRecords, CRM_OBJECT_OPPORTUNITY } from "../api/crm-client.js";
 
 const API_KEY = "opportunity";
 const LIST_FIELDS = ["id", "opportunityName", "money", "createdAt"];
@@ -140,7 +140,7 @@ export function registerOpportunityCommands(parent: Command): void {
       try {
         const page = parseInt(opts.page || "1");
         const size = parseInt(opts.size || "20");
-        const resp = await fetchActivityRecords(3, itemId, page, size);
+        const resp = await fetchActivityRecords(CRM_OBJECT_OPPORTUNITY, itemId, page, size);
         console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
       } catch (e) { handleError(e); }
     });
