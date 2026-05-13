@@ -1,18 +1,16 @@
 // visit 语义别名命令 — list / get / create
 
 import { Command } from "commander";
-import { withAuth } from "../middleware/auth-check.js";
 import { formatOutput } from "../api/format.js";
 import { fmt, parseFields, parseData, handleError } from "./shared.js";
+import { fetchActivityRecords } from "../api/crm-client.js";
 import {
   getObject,
   createObject,
-  queryObjects,
 } from "../services/object.service.js";
-import { buildListQuery } from "../utils/index.js";
+import { withAuth } from "../middleware/auth-check.js";
 
 const API_KEY = "visitRecord";
-const LIST_FIELDS = ["id", "createdAt"];
 
 interface CmdOpts {
   format: "json" | "table" | "raw";
@@ -25,23 +23,22 @@ interface CmdOpts {
 export function registerVisitCommands(parent: Command): void {
   const visit = parent.command("visit").description("跟进操作");
 
-  // list
+  // list — 使用 CRM 域接口，需要 itemId
   visit.command("list")
-    .description("跟进列表")
+    .description("跟进列表（用于特定客户或商机）")
+    .argument("<itemId>", "客户或商机 ID")
     .option("--format <format>", "输出格式", "json")
     .option("--fields <fields>", "输出字段")
     .option("--page <n>", "页码", "1")
     .option("--size <n>", "每页条数", "20")
-    .action(withAuth(async (opts: CmdOpts) => {
+    .action(async (itemId: string, opts: CmdOpts) => {
       try {
         const page = parseInt(opts.page || "1");
         const size = parseInt(opts.size || "20");
-        const offset = (page - 1) * size;
-        const sql = buildListQuery(API_KEY, LIST_FIELDS, { offset, size });
-        const resp = await queryObjects(sql);
+        const resp = await fetchActivityRecords(1, itemId, page, size);
         console.log(formatOutput(resp, { format: fmt(opts), fields: parseFields(opts) }));
       } catch (e) { handleError(e); }
-    }));
+    });
 
   // get
   visit.command("get")
