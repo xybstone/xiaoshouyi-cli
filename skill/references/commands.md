@@ -7,6 +7,9 @@ xsy auth login          交互式输入凭据完成登录
 xsy auth status         查看认证状态（JSON）
 xsy auth logout         清除本地凭据
 xsy auth reset          强制重置凭据（恢复用）
+xsy auth crm-cookie     保存/清除 CRM 域 Cookie（用于跟进功能）
+  --cookie <str>        设置 Cookie 字符串
+  --clear               清除已保存的 Cookie
 ```
 
 ## 通用 CRUD 命令
@@ -25,15 +28,16 @@ xsy delete account 2048503 -y                          删除记录（不可逆�
 ## 客户（account）命令
 
 ```
-xsy account list [--page 1] [--size 20] [--sort accountName] [--order asc|desc] [--format json|table] [--fields id,name]
-xsy account search <keyword> [--fields id,name]
-xsy account get <id> [--fields id,name]
-xsy account create --data '{"accountName":"...", "phone":"...", ...}'
-xsy account update <id> --data '{"phone":"...", ...}'
+xsy account list [--page 1] [--size 20] [--sort accountName] [--order asc|desc] [--format json|table]
+xsy account search <keyword>
+xsy account get <id>
+xsy account follows <id> [--page 1] [--size 20]    客户跟进记录（需要 CRM Cookie）
+xsy account create --data '{"accountName":"...", ...}'
+xsy account update <id> --data '{...}'
 xsy account delete <id> -y
 ```
 
-客户 list 默认字段：id, accountName, phone, industry, createdAt
+客户 list 默认字段：id, accountName, phone, createdAt
 
 ## 商机（opportunity）命令
 
@@ -41,23 +45,26 @@ xsy account delete <id> -y
 xsy opportunity list [--page 1] [--size 20] [--format json|table]
 xsy opportunity search <keyword>
 xsy opportunity get <id>
-xsy opportunity create --data '{"opportunityName":"...", "customerId":"...", ...}'
+xsy opportunity follows <id> [--page 1] [--size 20]   商机跟进记录（需要 CRM Cookie）
+xsy opportunity create --data '{"opportunityName":"...", ...}'
 xsy opportunity update <id> --data '{...}'
 xsy opportunity delete <id> -y
 xsy opportunity stages                                  商机阶段定义列表
 ```
 
-商机 list 默认字段：id, opportunityName, customerId, stage, money, createdAt
+商机 list 默认字段：id, opportunityName, money, createdAt
 
 ## 跟进（visitRecord）命令
 
-```
-xsy visit list [--page 1] [--size 20] [--format json|table]
-xsy visit get <id>
-xsy visit create --data '{"content":"...", "visitDate":"...", "customerId":"...", ...}'
-```
+> 注：REST API 域的 visitRecord / activityRecord 对象被禁用，跟进列表通过 CRM 域接口获取，需要配置 Cookie。
 
-跟进 list 默认字段：id, content, visitDate, customerId, creator
+```
+xsy account follows <客户ID>                             客户下的跟进记录（推荐）
+xsy opportunity follows <商机ID>                         商机下的跟进记录（推荐）
+xsy visit list <对象ID> [--page 1] [--size 20]          跟进列表（通用）
+xsy visit get <id>                                       跟进详情
+xsy visit create --data '{...}'                          创建跟进
+```
 
 ## 元数据 / Agent 发现
 
@@ -89,3 +96,4 @@ xsy schema <path>       命令路径 schema（预留）
 | `XSY_SECURITY_TOKEN` | 8位安全令牌 |
 | `XSY_ACCESS_TOKEN` | 直接注入 token，跳过 OAuth |
 | `XSY_API_BASE_URL` | API 地址（多租户） |
+| `XSY_CRM_COOKIE` | CRM 域 Cookie（跟进功能必需） |

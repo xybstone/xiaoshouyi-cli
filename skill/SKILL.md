@@ -37,6 +37,12 @@ xsy auth login
 
 > 交互式登录时 password 输入 = 用户密码 + 8位安全令牌（直接拼接）；环境变量方式则分别传入 XSY_PASSWORD 和 XSY_SECURITY_TOKEN
 
+**跟进功能需要额外配置 CRM Cookie**（REST API 域的 activityRecord 对象被禁用）：
+```bash
+# 浏览器 F12 → Network → 复制 Cookie → 保存
+xsy auth crm-cookie --cookie '...'
+```
+
 ## 意图路由
 
 | 用户意图 | 命令 | 示例 |
@@ -51,7 +57,8 @@ xsy auth login
 | 查商机列表 | `xsy opportunity list` | — |
 | 搜索商机 | `xsy opportunity search "云服务"` | — |
 | 商机阶段定义 | `xsy opportunity stages` | — |
-| 跟进列表 | `xsy visit list` | — |
+| 查客户跟进 | `xsy account follows 2048503` | 需要 CRM Cookie |
+| 查商机跟进 | `xsy opportunity follows <id>` | 需要 CRM Cookie |
 | 创建跟进 | `xsy visit create --data '{...}'` | — |
 | SQL 查询 | `xsy query "select id,accountName from account limit 0,10"` | — |
 | 对象元数据 | `xsy describe account` | 字段类型/必填 |
@@ -63,7 +70,7 @@ xsy auth login
 1. **需要登录？** → `xsy auth login`
 2. **操作具体客户？** → `xsy account <subcommand>`
 3. **操作具体商机？** → `xsy opportunity <subcommand>`
-4. **查看/创建跟进？** → `xsy visit <subcommand>`
+4. **查看某客户或商机的跟进？** → `xsy account follows <id>` 或 `xsy opportunity follows <id>`
 5. **复杂查询/跨对象？** → `xsy query "<SQL>"`
 6. **查看字段定义？** → `xsy describe <apiKey>`
 7. **不知道有什么命令？** → `xsy schema`
@@ -111,7 +118,8 @@ xsy account list --format table --fields id,accountName
 ### 环境变量安全
 
 - 生产环境建议使用环境变量传入凭据，避免在命令行暴露
-- `XSY_CLIENT_SECRET` 和 `XSY_PASSWORD` 不应记录到日志
+- `XSY_CLIENT_SECRET`、`XSY_PASSWORD` 和 `XSY_CRM_COOKIE` 不应记录到日志
+- CRM Cookie 是浏览器会话凭证，泄露等同于账号泄露
 
 ## 故障排查
 
@@ -121,3 +129,5 @@ xsy account list --format table --fields id,accountName
 | `Token 刷新失败` | refresh_token 过期 | `xsy auth login` 重新登录 |
 | `code !== 200` | 业务错误 | 检查 `msg` 字段 |
 | `--data 格式无效` | JSON 语法错误 | 检查引号转义 |
+| `CRM Cookie 未配置` | 跟进功能未设置 Cookie | `xsy auth crm-cookie --cookie '...'` |
+| 跟进返回空 | Cookie 过期 | 浏览器重新复制 Cookie 后更新 |
