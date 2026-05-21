@@ -78,6 +78,8 @@ export class AuthManager {
       tenantId: data.tenant_id,
       clientId: config.clientId,
       clientSecret: config.clientSecret,
+      username: config.username,
+      password: config.password,
     };
 
     this.state = state;
@@ -86,49 +88,102 @@ export class AuthManager {
   }
 
   async refresh(): Promise<void> {
-    if (!this.state?.refreshToken) {
-      throw new Error("No refresh token available");
+    // 阶段 1：尝试 refresh_token grant
+    if (this.state?.refreshToken) {
+      try {
+        await this.refreshWithToken();
+        return;
+      } catch {
+        // refresh_token 失效，fallthrough 到 password grant
+      }
     }
 
+    // 阶段 2：fallback — 用存储的 username/password 重新走 password grant
+    if (this.state?.username && this.state?.password) {
+      await this.refreshWithPassword();
+      return;
+    }
+
+    throw new Error("No valid credential to refresh token");
+  }
+
+  private async refreshWithToken(): Promise<void> {
+    const s = this.state!;
     const params = new URLSearchParams();
     params.append("grant_type", "refresh_token");
-    params.append("client_id", this.state.clientId);
-    params.append("client_secret", this.state.clientSecret);
-    params.append("refresh_token", this.state.refreshToken);
+    params.append("client_id", s.clientId);
+    params.append("client_secret", s.clientSecret);
+    params.append("refresh_token", s.refreshToken);
 
     const response = await axios.get<TokenResponse>(
       `${AUTH_BASE_URL}/auc/oauth2/token`,
-      {
-        params,
-        timeout: DEFAULT_TIMEOUT,
-      }
+      { params, timeout: DEFAULT_TIMEOUT }
     );
 
     const data = response.data;
-    const state: AuthState = {
+    this.state = {
       accessToken: data.access_token,
-      refreshToken: data.refresh_token || this.state.refreshToken,
+      refreshToken: data.refresh_token || s.refreshToken,
       expiresAt: Date.now() + data.expires_in * 1000,
-      apiBaseUrl: data.api_base_url || this.state.apiBaseUrl,
-      tenantId: data.tenant_id ?? this.state.tenantId,
-      clientId: this.state.clientId,
-      clientSecret: this.state.clientSecret,
+      apiBaseUrl: data.api_base_url || s.apiBaseUrl,
+      tenantId: data.tenant_id ?? s.tenantId,
+      clientId: s.clientId,
+      clientSecret: s.clientSecret,
+      username: s.username,
+      password: s.password,
     };
+    this.storage.write(this.state);
+  }
 
-    this.state = state;
-    this.storage.write(state);
+  private async refreshWithPassword(): Promise<void> {
+    const s = this.state!;
+    const params = new URLSearchParams();
+    params.append("grant_type", "password");
+    params.append("client_id", s.clientId);
+    params.append("client_secret", s.clientSecret);
+    params.append("username", s.username!);
+    params.append("password", s.password!);
+
+    const response = await axios.get<TokenResponse>(
+      `${AUTH_BASE_URL}/auc/oauth2/token`,
+      { params, timeout: DEFAULT_TIMEOUT }
+    );
+
+    const data = response.data;
+    this.state = {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token || s.refreshToken,
+      expiresAt: Date.now() + data.expires_in * 1000,
+      apiBaseUrl: data.api_base_url || s.apiBaseUrl,
+      tenantId: data.tenant_id ?? s.tenantId,
+      clientId: s.clientId,
+      clientSecret: s.clientSecret,
+      username: s.username,
+      password: s.password,
+    };
+    this.storage.write(this.state);
   }
 
   getApiBaseUrl(): string {
     return this.state?.apiBaseUrl ?? API_BASE_URL;
   }
 
-  getStatus(): { authenticated: boolean; tenantId?: string; expiresAt?: number } {
-    if (!this.state) return { authenticated: false };
+  getStatus(): {
+    authenticated: boolean;
+    tenantId?: string;
+    expiresAt?: number;
+    hasRefreshToken: boolean;
+    hasCredentialsForRelogin: boolean;
+  } {
+    if (!this.state) {
+      return { authenticated: false, hasRefreshToken: false, hasCredentialsForRelogin: false };
+    }
     return {
       authenticated: this.isAuthenticated(),
       tenantId: this.state.tenantId,
       expiresAt: this.state.expiresAt,
+      hasRefreshToken: !!this.state.refreshToken,
+      hasCredentialsForRelogin: !!(this.state.username && this.state.password),
     };
   }
 

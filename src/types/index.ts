@@ -40,6 +40,10 @@ export interface AuthState {
   tenantId?: string;
   clientId: string;
   clientSecret: string;
+  /** 用于 refresh_token 不可用时 fallback 到 password grant 自动重登录 */
+  username?: string;
+  /** 用于 fallback 重登录（已拼接安全令牌） */
+  password?: string;
 }
 
 export interface AuthConfig {

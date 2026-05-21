@@ -125,8 +125,8 @@ xsy account list --format table --fields id,accountName
 
 | 症状 | 原因 | 解决 |
 |------|------|------|
-| `未登录` | token 过期或未认证 | `xsy auth login` |
-| `Token 刷新失败` | refresh_token 过期 | `xsy auth login` 重新登录 |
+| `未登录` | token 过期且无存储凭据可自动刷新 | `xsy auth login`（首次使用或凭据已清除） |
+| `Token 刷新失败` | refresh_token 和存储凭据均失效 | `xsy auth login` 重新登录 |
 | `code !== 200` | 业务错误 | 检查 `msg` 字段 |
 | `--data 格式无效` | JSON 语法错误 | 检查引号转义 |
 | `CRM Cookie 未配置` | 跟进功能未设置 Cookie | `xsy auth crm-cookie --cookie '...'` |
