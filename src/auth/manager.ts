@@ -15,6 +15,19 @@ interface TokenResponse {
   api_base_url?: string;
 }
 
+/** 判断错误是否为认证相关（400/401），应 fallthrough；网络等错误应向上抛 */
+function isAuthError(err: unknown): boolean {
+  if (
+    err && typeof err === "object" &&
+    "response" in err &&
+    typeof (err as Record<string, unknown>).response === "object"
+  ) {
+    const status = ((err as Record<string, unknown>).response as Record<string, unknown>).status;
+    return status === 400 || status === 401;
+  }
+  return false;
+}
+
 export class AuthManager {
   private storage: AuthStorage;
   private state: AuthState | null = null;
@@ -72,12 +85,15 @@ export class AuthManager {
     const data = response.data;
     const state: AuthState = {
       accessToken: data.access_token,
+      // NOTE: 销售易 Password Grant 通常不返回 refresh_token
       refreshToken: data.refresh_token,
       expiresAt: Date.now() + data.expires_in * 1000,
       apiBaseUrl: data.api_base_url || "https://api.xiaoshouyi.com",
       tenantId: data.tenant_id,
       clientId: config.clientId,
       clientSecret: config.clientSecret,
+      // 存储 username/password 用于 refresh_token 不可用时的 fallback 重登录
+      // 这些凭据以 0o600 权限持久化在本地文件或 Keychain 中，等同于明文存储
       username: config.username,
       password: config.password,
     };
@@ -91,58 +107,38 @@ export class AuthManager {
     // 阶段 1：尝试 refresh_token grant
     if (this.state?.refreshToken) {
       try {
-        await this.refreshWithToken();
+        await this.refreshWithGrant("refresh_token", { refresh_token: this.state.refreshToken });
         return;
-      } catch {
-        // refresh_token 失效，fallthrough 到 password grant
+      } catch (err) {
+        // 仅在认证错误（400/401）时 fallthrough，网络/超时等直接抛出
+        if (!isAuthError(err)) throw err;
       }
     }
 
     // 阶段 2：fallback — 用存储的 username/password 重新走 password grant
-    if (this.state?.username && this.state?.password) {
-      await this.refreshWithPassword();
+    const { username, password } = this.state ?? {};
+    if (username && password) {
+      await this.refreshWithGrant("password", { username, password });
       return;
     }
 
     throw new Error("No valid credential to refresh token");
   }
 
-  private async refreshWithToken(): Promise<void> {
-    const s = this.state!;
+  private async refreshWithGrant(
+    grantType: string,
+    extraParams: Record<string, string>,
+  ): Promise<void> {
+    const s = this.state;
+    if (!s) throw new Error("No auth state");
+
     const params = new URLSearchParams();
-    params.append("grant_type", "refresh_token");
+    params.append("grant_type", grantType);
     params.append("client_id", s.clientId);
     params.append("client_secret", s.clientSecret);
-    params.append("refresh_token", s.refreshToken);
-
-    const response = await axios.get<TokenResponse>(
-      `${AUTH_BASE_URL}/auc/oauth2/token`,
-      { params, timeout: DEFAULT_TIMEOUT }
-    );
-
-    const data = response.data;
-    this.state = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token || s.refreshToken,
-      expiresAt: Date.now() + data.expires_in * 1000,
-      apiBaseUrl: data.api_base_url || s.apiBaseUrl,
-      tenantId: data.tenant_id ?? s.tenantId,
-      clientId: s.clientId,
-      clientSecret: s.clientSecret,
-      username: s.username,
-      password: s.password,
-    };
-    this.storage.write(this.state);
-  }
-
-  private async refreshWithPassword(): Promise<void> {
-    const s = this.state!;
-    const params = new URLSearchParams();
-    params.append("grant_type", "password");
-    params.append("client_id", s.clientId);
-    params.append("client_secret", s.clientSecret);
-    params.append("username", s.username!);
-    params.append("password", s.password!);
+    for (const [key, value] of Object.entries(extraParams)) {
+      params.append(key, value);
+    }
 
     const response = await axios.get<TokenResponse>(
       `${AUTH_BASE_URL}/auc/oauth2/token`,
