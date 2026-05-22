@@ -19,19 +19,33 @@ npm install -g xiaoshouyi-cli
 
 ## 认证（必须先执行）
 
+### 免登录（推荐）
+
+在项目目录创建 `.env` 文件，填入 `XSY_ACCESS_TOKEN` 即可跳过登录，CLI 启动时自动加载：
+
 ```bash
-# 交互式登录
+# .env
+XSY_ACCESS_TOKEN=your_access_token_here
+```
+
+> `.env` 中的变量不会覆盖 shell 中已 export 的同名环境变量。
+
+### 交互式登录
+
+```bash
 xsy auth login
+```
 
-# 查看状态
-xsy auth status
+### 环境变量 / .env 直通（CI / 自动化）
 
-# 环境变量直通（CI）
-export XSY_CLIENT_ID=xxx
-export XSY_CLIENT_SECRET=xxx
-export XSY_USERNAME=xxx
-export XSY_PASSWORD=xxx
-export XSY_SECURITY_TOKEN=xxxxxx  # 8位安全令牌
+可在 `.env` 或 shell 环境变量中配置凭据，使 `xsy auth login` 非交互式完成：
+
+```bash
+XSY_CLIENT_ID=xxx
+XSY_CLIENT_SECRET=xxx
+XSY_USERNAME=xxx
+XSY_PASSWORD=xxx
+XSY_SECURITY_TOKEN=xxxxxx  # 8位安全令牌
 xsy auth login
 ```
 
@@ -117,6 +131,7 @@ xsy account list --format table --fields id,accountName
 
 ### 环境变量安全
 
+- **推荐使用 `.env` 文件存储 token**：`XSY_ACCESS_TOKEN=<token>` 写入项目根目录 `.env`，CLI 自动加载
 - 生产环境建议使用环境变量传入凭据，避免在命令行暴露
 - `XSY_CLIENT_SECRET`、`XSY_PASSWORD` 和 `XSY_CRM_COOKIE` 不应记录到日志
 - CRM Cookie 是浏览器会话凭证，泄露等同于账号泄露

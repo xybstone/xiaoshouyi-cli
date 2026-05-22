@@ -85,7 +85,9 @@ xsy schema <path>       命令路径 schema（预留）
 | `-y, --yes` | false | 跳过删除确认（危险操作） |
 | `--timeout <s>` | 30 | HTTP 超时（秒） |
 
-## 环境变量
+## 环境变量 + .env
+
+所有环境变量均可配置在项目根目录的 `.env` 文件中，CLI 启动时自动加载（不覆盖已有环境变量）。推荐将 `XSY_ACCESS_TOKEN` 写入 `.env` 实现免登录。
 
 | 变量 | 说明 |
 |------|------|
@@ -94,6 +96,6 @@ xsy schema <path>       命令路径 schema（预留）
 | `XSY_USERNAME` | 用户名 |
 | `XSY_PASSWORD` | 用户密码（不含安全令牌，令牌单独通过 XSY_SECURITY_TOKEN 传入） |
 | `XSY_SECURITY_TOKEN` | 8位安全令牌 |
-| `XSY_ACCESS_TOKEN` | 直接注入 token，跳过 OAuth |
+| `XSY_ACCESS_TOKEN` | 直接注入 token，跳过 OAuth（推荐放入 .env） |
 | `XSY_API_BASE_URL` | API 地址（多租户） |
 | `XSY_CRM_COOKIE` | CRM 域 Cookie（跟进功能必需） |

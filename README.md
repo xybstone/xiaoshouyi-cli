@@ -10,10 +10,26 @@ npm install -g xiaoshouyi-cli
 
 ## 快速开始
 
-```bash
-# 登录
-xsy auth login
+### 免登录（推荐）
 
+在项目目录创建 `.env` 文件，填入 access token 即可跳过登录：
+
+```bash
+# .env
+XSY_ACCESS_TOKEN=your_access_token_here
+```
+
+之后所有命令自动读取，无需 `xsy auth login`。也支持在 `.env` 中配置登录凭据，使 `xsy auth login` 非交互式完成。
+
+### 交互式登录
+
+```bash
+xsy auth login
+```
+
+### 常用命令
+
+```bash
 # 查看客户列表
 xsy account list
 
