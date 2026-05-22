@@ -30,11 +30,30 @@ XSY_ACCESS_TOKEN=your_access_token_here
 
 > `.env` 中的变量不会覆盖 shell 中已 export 的同名环境变量。
 
-### 交互式登录
+**如何获取安全令牌：**
+
+1. 登录 ZStack 销售易 CRM 网页端
+2. 在左侧导航栏进入 **客户管理** → **安全令牌**
+3. 点击 **获取安全令牌** 按钮即可生成 token
+4. 将获取到的 token 填入 `.env` 文件中的 `XSY_ACCESS_TOKEN`
+
+### 用户名密码登录
 
 ```bash
 xsy auth login
 ```
+
+交互式输入以下 5 项信息：
+
+| 字段 | 说明 |
+|------|------|
+| Client ID | 应用标识 |
+| Client Secret | 应用密钥 |
+| Username | 登录用户名（手机号/邮箱） |
+| Password | 登录密码 |
+| Security Token | 安全令牌（8 位数字，与安全令牌页获取的 Access Token 不同） |
+
+> **Security Token 获取方式：** 登录 CRM 网页端 → **客户管理** → **安全令牌** → 页面会显示一个 8 位数字的安全令牌。注意此处的 Security Token 和上一节的 Access Token 是不同的字段。
 
 ### 环境变量 / .env 直通（CI / 自动化）
 
@@ -52,9 +71,20 @@ xsy auth login
 > 交互式登录时 password 输入 = 用户密码 + 8位安全令牌（直接拼接）；环境变量方式则分别传入 XSY_PASSWORD 和 XSY_SECURITY_TOKEN
 
 **跟进功能需要额外配置 CRM Cookie**（REST API 域的 activityRecord 对象被禁用）：
+
+1. 登录销售易 CRM 网页端，打开浏览器开发者工具（F12）
+2. 切换到 **Network** 标签页，刷新页面或触发任一操作
+3. 点击任意网络请求，找到 **Cookie** 请求头，复制完整的 Cookie 值
+
 ```bash
-# 浏览器 F12 → Network → 复制 Cookie → 保存
-xsy auth crm-cookie --cookie '...'
+# 保存 Cookie
+xsy auth crm-cookie --cookie 'JSESSIONID=xxx; ...'
+
+# 也可通过环境变量保存
+XSY_CRM_COOKIE='JSESSIONID=xxx; ...' xsy auth crm-cookie
+
+# 清除过期 Cookie
+xsy auth crm-cookie --clear
 ```
 
 ## 意图路由
