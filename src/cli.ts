@@ -1,5 +1,8 @@
 // xiaoshouyi-cli 主入口 — Commander CLI 组装
 
+// 自动加载当前目录的 .env 文件（不覆盖已有环境变量）
+try { process.loadEnvFile(); } catch { /* .env 不存在则跳过 */ }
+
 import { Command } from "commander";
 import pkg from "../package.json" with { type: "json" };
 import { registerAuthCommands } from "./commands/auth.js";
