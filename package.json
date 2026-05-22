@@ -1,6 +1,6 @@
 {
   "name": "xiaoshouyi-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "销售易 CRM 命令行工具 — 为 AI Agent 设计的 CRM 操作接口",
   "type": "module",
   "bin": {
