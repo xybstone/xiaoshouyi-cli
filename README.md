@@ -21,6 +21,13 @@ XSY_ACCESS_TOKEN=your_access_token_here
 
 之后所有命令自动读取，无需 `xsy auth login`。也支持在 `.env` 中配置登录凭据，使 `xsy auth login` 非交互式完成。
 
+**如何获取安全令牌：**
+
+1. 登录 ZStack 销售易 CRM 网页端
+2. 在左侧导航栏进入 **客户管理** → **安全令牌**
+3. 点击 **获取安全令牌** 按钮即可生成 token
+4. 将获取到的 token 填入 `.env` 文件中的 `XSY_ACCESS_TOKEN`
+
 ### 交互式登录
 
 ```bash
