@@ -1,6 +1,7 @@
 // xiaoshouyi-cli 主入口 — Commander CLI 组装
 
 import { Command } from "commander";
+import pkg from "../package.json" with { type: "json" };
 import { registerAuthCommands } from "./commands/auth.js";
 import { registerCrudCommands } from "./commands/crud.js";
 import { registerAccountCommands } from "./commands/account.js";
@@ -13,7 +14,7 @@ const program = new Command();
 program
   .name("xsy")
   .description("销售易 CRM 命令行工具")
-  .version("0.1.0")
+  .version(pkg.version)
   .option("--format <format>", "输出格式: json | table | raw", "json")
   .option("--jq <expr>", "jq 表达式过滤 JSON 输出")
   .option("--fields <fields>", "只输出指定字段，逗号分隔")
