@@ -34,6 +34,8 @@ export function registerAuthCommands(parent: Command): void {
           clientSecret,
           username,
           password: password + securityToken,
+          rawPassword: password,
+          securityToken,
         };
 
         const state = await authManager.login(config);
@@ -79,16 +81,41 @@ export function registerAuthCommands(parent: Command): void {
   // ---- xsy auth crm-cookie ----
   auth
     .command("crm-cookie")
-    .description("保存/清除 CRM 域 Cookie（从浏览器复制，用于跟进等操作）")
-    .option("--cookie <str>", "Cookie 字符串")
+    .description("管理 CRM 域 Cookie（用于跟进记录等操作）")
+    .option("--cookie <str>", "手动设置 Cookie 字符串")
+    .option("--auto", "使用已保存的凭据自动登录获取 Cookie")
     .option("--clear", "清除已保存的 CRM Cookie")
-    .action(async (opts: { cookie?: string; clear?: boolean }) => {
-      const { saveCrmCookie, clearCrmCookie, hasCrmCookie } = await import("../api/crm-client.js");
+    .action(async (opts: { cookie?: string; auto?: boolean; clear?: boolean }) => {
+      const { saveCrmCookie, clearCrmCookie, hasCrmCookie, loginCrm } = await import("../api/crm-client.js");
+
       if (opts.clear) {
         clearCrmCookie();
         console.log(JSON.stringify({ status: "ok", message: "CRM Cookie 已清除" }));
         return;
       }
+
+      if (opts.auto) {
+        try {
+          await loginCrm();
+          const { getAuthManager } = await import("../auth/manager.js");
+          const status = getAuthManager().getStatus();
+          console.log(JSON.stringify({
+            status: "ok",
+            message: "CRM Cookie 已通过凭据自动登录获取",
+            hasCredentials: status.canAutoRefreshCrmCookie,
+          }));
+        } catch (err: unknown) {
+          const m = err instanceof Error ? err.message : String(err);
+          console.log(JSON.stringify({
+            status: "error",
+            message: m,
+            hint: "请先通过 xsy auth login 登录并保存凭据",
+          }));
+          process.exitCode = 1;
+        }
+        return;
+      }
+
       if (opts.cookie) {
         saveCrmCookie(opts.cookie);
         console.log(JSON.stringify({ status: "ok", message: "CRM Cookie 已保存" }));
@@ -98,9 +125,10 @@ export function registerAuthCommands(parent: Command): void {
       } else {
         console.log(JSON.stringify({
           status: "error",
-          message: "请通过 --cookie 传入，或设置 XSY_CRM_COOKIE 环境变量",
-          usage: "xsy auth crm-cookie --cookie '...'",
-          hint: "在浏览器 F12 → Network → 复制任意请求的 Cookie 头",
+          message: "请提供 Cookie 或使用自动登录",
+          manual: "xsy auth crm-cookie --cookie 'JSESSIONID=...'",
+          auto: "xsy auth crm-cookie --auto",
+          hint: "手动方式在浏览器 F12 → Network → 复制任意请求的 Cookie 头",
           clear: "xsy auth crm-cookie --clear",
           current: hasCrmCookie() ? "已配置" : "未配置",
         }));

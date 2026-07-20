@@ -11,6 +11,7 @@ import { registerAccountCommands } from "./commands/account.js";
 import { registerOpportunityCommands } from "./commands/opportunity.js";
 import { registerVisitCommands } from "./commands/visit.js";
 import { registerMetaCommands } from "./commands/meta.js";
+import { registerApprovalCommands } from "./commands/approval.js";
 
 const program = new Command();
 
@@ -40,5 +41,6 @@ registerVisitCommands(program);
 
 // ---- Phase 6: CLI 组装 ----
 registerMetaCommands(program);
+registerApprovalCommands(program);
 
 program.parse();

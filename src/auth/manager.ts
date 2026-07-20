@@ -96,6 +96,8 @@ export class AuthManager {
       // 这些凭据以 0o600 权限持久化在本地文件或 Keychain 中，等同于明文存储
       username: config.username,
       password: config.password,
+      rawPassword: config.rawPassword,
+      securityToken: config.securityToken,
     };
 
     this.state = state;
@@ -156,6 +158,8 @@ export class AuthManager {
       clientSecret: s.clientSecret,
       username: s.username,
       password: s.password,
+      rawPassword: s.rawPassword,
+      securityToken: s.securityToken,
     };
     this.storage.write(this.state);
   }
@@ -170,9 +174,10 @@ export class AuthManager {
     expiresAt?: number;
     hasRefreshToken: boolean;
     hasCredentialsForRelogin: boolean;
+    canAutoRefreshCrmCookie: boolean;
   } {
     if (!this.state) {
-      return { authenticated: false, hasRefreshToken: false, hasCredentialsForRelogin: false };
+      return { authenticated: false, hasRefreshToken: false, hasCredentialsForRelogin: false, canAutoRefreshCrmCookie: false };
     }
     return {
       authenticated: this.isAuthenticated(),
@@ -180,7 +185,18 @@ export class AuthManager {
       expiresAt: this.state.expiresAt,
       hasRefreshToken: !!this.state.refreshToken,
       hasCredentialsForRelogin: !!(this.state.username && this.state.password),
+      canAutoRefreshCrmCookie: !!(this.state.username && this.state.rawPassword),
     };
+  }
+
+  /** 获取用户名（用于 CRM 登录） */
+  getUsername(): string | undefined {
+    return this.state?.username;
+  }
+
+  /** 获取原始密码（不含安全令牌，用于 CRM 登录） */
+  getRawPassword(): string | undefined {
+    return this.state?.rawPassword;
   }
 
   logout(): void {

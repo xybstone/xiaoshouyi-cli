@@ -9,7 +9,9 @@
 - 商机（opportunity）的增删改查、列表、搜索
 - 商机阶段（oppProcess）定义查看
 - 跟进记录（visitRecord）的列表、详情、创建
+- **审批管理**（approval）：待办查询、批准、驳回
 - 任意 CRM 对象的通用 SQL 查询和 CRUD 操作
+- Cookie 自动过期刷新（跟进记录和审批操作会话自动维护）
 
 ## 安装
 
@@ -70,14 +72,21 @@ xsy auth login
 
 > 交互式登录时 password 输入 = 用户密码 + 8位安全令牌（直接拼接）；环境变量方式则分别传入 XSY_PASSWORD 和 XSY_SECURITY_TOKEN
 
-**跟进功能需要额外配置 CRM Cookie**（REST API 域的 activityRecord 对象被禁用）：
+**跟进功能需要额外配置 CRM Cookie**（REST API 域的 activityRecord 对象被禁用）。有两种方式：
 
-1. 登录销售易 CRM 网页端，打开浏览器开发者工具（F12）
-2. 切换到 **Network** 标签页，刷新页面或触发任一操作
-3. 点击任意网络请求，找到 **Cookie** 请求头，复制完整的 Cookie 值
+### 方式一：自动获取（推荐）
+```bash
+# 使用已保存的凭据自动登录 CRM 获取 Cookie
+xsy auth crm-cookie --auto
+# 或
+xsy approval refresh-cookie
+```
+
+### 方式二：从浏览器手动复制
+登录销售易 CRM 网页端，打开浏览器开发者工具（F12）→ **Network** 标签页 → 刷新页面或触发任一操作 → 点击任意网络请求，找到 **Cookie** 请求头，复制完整的 Cookie 值。
 
 ```bash
-# 保存 Cookie
+# 手动设置 Cookie
 xsy auth crm-cookie --cookie 'JSESSIONID=xxx; ...'
 
 # 也可通过环境变量保存
@@ -86,6 +95,8 @@ XSY_CRM_COOKIE='JSESSIONID=xxx; ...' xsy auth crm-cookie
 # 清除过期 Cookie
 xsy auth crm-cookie --clear
 ```
+
+> **Cookie 自动刷新**：`fetchActivityRecords` 在检测到 Cookie 过期时会自动尝试使用存储的凭据重新登录，无需手动干预。
 
 ## 意图路由
 
@@ -108,6 +119,11 @@ xsy auth crm-cookie --clear
 | 对象元数据 | `xsy describe account` | 字段类型/必填 |
 | API Key 列表 | `xsy meta ls` | — |
 | 命令发现 | `xsy schema` | JSON格式 |
+| 审批待办列表 | `xsy approval list --status 0` | 0-待审批,1-已通过,2-已驳回 |
+| 审批详情 | `xsy approval get <id>` | — |
+| 批准审批 | `xsy approval approve <id> --comment "同意"` | — |
+| 驳回审批 | `xsy approval reject <id> --comment "理由"` | — |
+| 自动刷新 CRM Cookie | `xsy auth crm-cookie --auto` | 需先登录保存凭据 |
 
 ### 路由决策树
 
@@ -115,10 +131,11 @@ xsy auth crm-cookie --clear
 2. **操作具体客户？** → `xsy account <subcommand>`
 3. **操作具体商机？** → `xsy opportunity <subcommand>`
 4. **查看某客户或商机的跟进？** → `xsy account follows <id>` 或 `xsy opportunity follows <id>`
-5. **复杂查询/跨对象？** → `xsy query "<SQL>"`
-6. **查看字段定义？** → `xsy describe <apiKey>`
-7. **不知道有什么命令？** → `xsy schema`
-8. **不知道有什么对象？** → `xsy meta ls`
+5. **审批相关？（待办/审批/驳回）** → `xsy approval list|approve|reject <id>`
+6. **复杂查询/跨对象？** → `xsy query "<SQL>"`
+7. **查看字段定义？** → `xsy describe <apiKey>`
+8. **不知道有什么命令？** → `xsy schema`
+9. **不知道有什么对象？** → `xsy meta ls`
 
 ## 输出格式
 
@@ -174,5 +191,9 @@ xsy account list --format table --fields id,accountName
 | `Token 刷新失败` | refresh_token 和存储凭据均失效 | `xsy auth login` 重新登录 |
 | `code !== 200` | 业务错误 | 检查 `msg` 字段 |
 | `--data 格式无效` | JSON 语法错误 | 检查引号转义 |
-| `CRM Cookie 未配置` | 跟进功能未设置 Cookie | `xsy auth crm-cookie --cookie '...'` |
-| 跟进返回空 | Cookie 过期 | 浏览器重新复制 Cookie 后更新 |
+| `CRM Cookie 未配置` | 跟进功能未设置 Cookie | `xsy auth crm-cookie --cookie '...'` 或 `xsy auth crm-cookie --auto` |
+| 跟进返回空 | Cookie 过期 | 自动刷新: `xsy auth crm-cookie --auto` 或 `xsy approval refresh-cookie` |
+| 审批待办列表 | 查询审批 | `xsy approval list` |
+| 审批详情 | 查看审批 | `xsy approval get <id>` |
+| 批准审批 | 通过审批 | `xsy approval approve <id> --comment "同意"` |
+| 驳回审批 | 拒绝审批 | `xsy approval reject <id> --comment "驳回理由"` |

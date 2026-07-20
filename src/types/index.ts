@@ -44,6 +44,10 @@ export interface AuthState {
   username?: string;
   /** 用于 fallback 重登录（已拼接安全令牌） */
   password?: string;
+  /** 原始密码（不含安全令牌），用于 CRM 登录 */
+  rawPassword?: string;
+  /** 安全令牌 */
+  securityToken?: string;
 }
 
 export interface AuthConfig {
@@ -51,6 +55,8 @@ export interface AuthConfig {
   clientSecret: string;
   username: string;
   password: string; // 含安全令牌拼接
+  rawPassword?: string;   // 原始密码（不含安全令牌），用于 CRM 登录
+  securityToken?: string; // 安全令牌
 }
 
 // CLI 全局选项
