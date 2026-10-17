@@ -3,7 +3,7 @@
     "xsy-sales": {
       "type": "stdio",
       "command": "node",
-      "args": ["/Users/xuyangbo/github.com/xiaoshouyi-cli/dist/mcp-server.js"],
+      "args": ["dist/mcp-server.js"],
       "instructions": true
     }
   }
