@@ -1,6 +1,30 @@
 # xiaoshouyi-cli
 
+
 销售易 CRM 命令行工具 — 为 AI Agent 设计的 CRM 操作接口。
+
+## OMP MCP 服务
+
+构建：
+
+```bash
+npm run build
+```
+
+项目提供只读 MCP server：`dist/mcp-server.js`。项目级配置位于 `.omp/mcp.json`，OMP 重载 MCP 后会发现 `xsy-sales`。
+
+工具：
+
+- `sales_order_detail`：按订单号查询订单、报价单和全部报价行，包含 BOM 配置参数；
+- `sales_hci_quote_details`：按国内业务事业部、订单金额非负、`isCube__c=true` 查询一体机订单及全部报价行；
+- `sales_monthly_summary`：按签约月份汇总一体机销售；
+- `sales_standard_pricebook`：查询销售易标准价格表（`priceBookId=3222340301701443`）的产品、规格型号、标准价、单位和状态；
+- `sales_order_bom`：按订单号查询报价单全部报价行及 `customItem26__c` / `customItem56__c` BOM 配置参数；
+- `sales_order_reconciliation`：按订单号核对 `order.amount`、订单父行 `orderProduct.priceTotal` 和报价行 `quoteLine.amountDomestic`，返回差异与异常标记；
+- `sales_crm_field_dictionary`：返回内置 CRM 关键字段字典、对象关系、枚举和分析口径；
+- `sales_crm_object_metadata`：按 API Key 返回 CRM 对象完整字段元数据。
+
+CRM 字段资料随项目 skill 保存在 `skill/references/crm/`。标准价格表不是订单销售额。正式销售额使用 `order.amount`；标准价用于硬件/软件价格结构分析，报价单明细用于实际报价和 BOM 分析。订单级金额以核对工具返回的差异和状态为准。
 
 ## 功能概览
 
@@ -10,7 +34,6 @@
 - **审批管理**：待办查询、批准、驳回
 - **通用 SQL 查询**：任意 CRM 对象的灵活查询
 - **元数据发现**：字段定义、对象列表、命令发现
-- **Cookie 自动刷新**：跟进记录和审批操作自动维护会话
 
 ## 安装
 
@@ -20,143 +43,39 @@ npm install -g xiaoshouyi-cli
 
 ## 认证
 
-### 免登录（推荐）
-
-在项目目录创建 `.env` 文件，填入 access token 即可跳过登录：
+在项目目录创建 `.env`，填入：
 
 ```bash
-# .env
 XSY_ACCESS_TOKEN=your_access_token_here
 ```
 
-之后所有命令自动读取，无需 `xsy auth login`。
-
-**如何获取 access token：**
-
-1. 登录销售易 CRM 网页端
-2. 进入 **客户管理** → **安全令牌**
-3. 点击 **获取安全令牌** 按钮
-4. 将获取到的 token 填入 `.env` 文件
-
-### 用户名密码登录
+或运行：
 
 ```bash
 xsy auth login
 ```
 
-交互式输入以下 5 项信息：
-
-| 字段 | 说明 |
-|------|------|
-| Client ID | 应用标识 |
-| Client Secret | 应用密钥 |
-| Username | 登录用户名 |
-| Password | 登录密码 |
-| Security Token | 安全令牌（8 位数字） |
-
-> Security Token 与上述 Access Token 不同，在 **客户管理 → 安全令牌** 页面获取。
-
-**非交互式登录（CI/自动化）：**
-
-```bash
-# .env
-XSY_CLIENT_ID=xxx
-XSY_CLIENT_SECRET=xxx
-XSY_USERNAME=xxx
-XSY_PASSWORD=xxx
-XSY_SECURITY_TOKEN=xxxxxx  # 8位安全令牌
-```
-
-### CRM Cookie 配置
-
-跟进记录和审批操作需要 CRM 域 Cookie。有两种方式：
-
-#### 方式一：自动获取（推荐）
-```bash
-xsy auth crm-cookie --auto
-```
-使用已保存的凭据自动登录 CRM 获取 Cookie。Cookie 过期时也会自动尝试刷新。
-
-#### 方式二：从浏览器手动复制
-1. 登录销售易 CRM 网页端
-2. F12 → Network → 刷新页面
-3. 点击任意请求，复制 Cookie 请求头
-
-```bash
-xsy auth crm-cookie --cookie 'JSESSIONID=xxx; ...'
-```
-
-清除 Cookie：
-```bash
-xsy auth crm-cookie --clear
-```
-
 ## 常用命令
 
-### 客户
 ```bash
-xsy account list                          # 客户列表
-xsy account search "华为"                 # 搜索客户
-xsy account get 2048503                   # 客户详情
-xsy account create --data '{"accountName":"新客户"}'  # 创建客户
-xsy account update 2048503 --data '{"phone":"123"}'   # 更新客户
-xsy account delete 2048503 -y            # 删除客户
-xsy account follows 2048503              # 跟进记录
-```
-
-### 商机
-```bash
-xsy opportunity list                      # 商机列表
-xsy opportunity search "云服务"           # 搜索商机
-xsy opportunity get 123                   # 商机详情
-xsy opportunity stages                    # 阶段定义
-xsy opportunity follows 123               # 跟进记录
-```
-
-### 跟进
-```bash
-xsy visit list <itemId>                   # 跟进列表
-xsy visit get <id>                        # 跟进详情
-xsy visit create --data '{...}'           # 创建跟进
-```
-
-### 审批
-```bash
-xsy approval list                         # 待审批列表
-xsy approval get <id>                     # 审批详情
-xsy approval approve <id> --comment "同意" # 批准
-xsy approval reject <id> --comment "理由"  # 驳回
-xsy approval refresh-cookie               # 手动刷新 Cookie
-```
-
-### 通用
-```bash
-xsy query "select id,accountName from account limit 0,10"  # SQL 查询
-xsy describe account                      # 对象字段定义
-xsy meta ls                               # 列出所有对象
-xsy schema                                # 命令发现
-```
-
-### 输出格式
-
-所有命令默认 JSON 输出，Agent 友好：
-
-```bash
-xsy account list                          # JSON（默认）
-xsy account list --format table           # 表格
-xsy account list --format table --fields id,accountName  # 指定字段
+xsy account list
+xsy account search "华为"
+xsy opportunity list
+xsy query "select id,accountName from account limit 0,10"
+xsy describe account
+xsy meta ls
+xsy schema
 ```
 
 ## 故障排查
 
-| 症状 | 原因 | 解决 |
-|------|------|------|
-| 未登录 | token 过期 | `xsy auth login` |
-| Token 刷新失败 | 凭据失效 | `xsy auth login` 重新登录 |
-| CRM Cookie 未配置 | 跟进/审批需要 Cookie | `xsy auth crm-cookie --auto` |
-| Cookie 过期 | 会话超时 | 自动刷新或 `xsy auth crm-cookie --auto` |
-| 审批查询失败 | Cookie 过期 | `xsy approval refresh-cookie` |
+| 症状 | 解决 |
+|---|---|
+| 未登录 | `xsy auth login` |
+| Token 刷新失败 | `xsy auth login` |
+| CRM Cookie 未配置 | `xsy auth crm-cookie --auto` |
 
 ## 许可证
 
 Private
+
