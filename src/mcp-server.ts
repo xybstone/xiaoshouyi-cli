@@ -11,6 +11,7 @@ const tools: Tool[] = [
   { name: "sales_monthly_summary", description: "按签约月份统计国内业务事业部、非负金额的一体机订单金额、订单数和产品数量。全量分页。", inputSchema: { type: "object", properties: { start: { type: "string", description: "开始日期 YYYY-MM-DD，默认2025-03-01" }, end: { type: "string", description: "结束日期 YYYY-MM-DD（含当天），默认2027-02-28" } } } },
   { name: "sales_standard_pricebook", description: "查询销售易标准价格表明细，返回产品、规格型号、标准价、单位和生效状态。可按产品 ID过滤。", inputSchema: { type: "object", properties: { productId: { type: "string", description: "可选产品 ID" }, limit: { type: "number", description: "返回条数，默认100，最大100" } } } },
   { name: "sales_order_bom", description: "按订单号查询报价单全部报价行及 BOM/配置参数，包含整机硬件、软件授权、服务和报价价格。", inputSchema: { type: "object", properties: { orderNo: { type: "string", description: "订单号" } }, required: ["orderNo"] } },
+  { name: "sales_order_reconciliation", description: "按订单号核对订单主表金额、订单父行明细金额与报价行金额，返回差异和异常标记。", inputSchema: { type: "object", properties: { orderNo: { type: "string", description: "订单号" } }, required: ["orderNo"] } },
   { name: "sales_crm_field_dictionary", description: "查询 xiaoshouyi-cli 内置的 CRM 关键字段字典、对象关系、枚举和分析口径。", inputSchema: { type: "object", properties: {} } },
   { name: "sales_crm_object_metadata", description: "查询 CRM 对象完整字段元数据、类型、标签、关联对象和枚举值。", inputSchema: { type: "object", properties: { apiKey: { type: "string", description: "对象 API Key，例如 order、orderProduct、quoteLine、product" } }, required: ["apiKey"] } },
 ];
