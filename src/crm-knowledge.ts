@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const CRM_DIR = path.resolve("skill/references/crm");
+const CRM_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../skill/references/crm");
 
 export async function getCrmFieldDictionary(): Promise<unknown> {
   const [dictionary, relations, guide] = await Promise.all([

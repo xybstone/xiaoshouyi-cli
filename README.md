@@ -11,7 +11,7 @@
 npm run build
 ```
 
-项目提供只读 MCP server：`dist/mcp-server.js`。项目级配置位于 `.omp/mcp.json`，OMP 重载 MCP 后会发现 `xsy-sales`。
+项目提供只读 MCP server：`dist/mcp-server.js`。项目级配置位于 `.omp/mcp.json`，OMP 重载 MCP 后会发现 `xsy-sales`。全局安装后也可直接用 `xsy-mcp` 作为 MCP server 命令。
 
 工具：
 
