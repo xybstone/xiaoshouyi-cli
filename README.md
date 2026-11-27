@@ -93,6 +93,16 @@ CRM 字段资料随项目 skill 保存在 `skill/references/crm/`。标准价格
 - **通用 SQL 查询**：任意 CRM 对象的灵活查询
 - **元数据发现**：字段定义、对象列表、命令发现
 
+## 0.5.0 迁移说明
+
+本版本新增 `xsy ticket` 工单命令及 `xsy-mcp-http` Streamable HTTP 入口。npm 已发布的 `0.4.1` 不包含这两项功能；本 PR 准备 `0.5.0`，合并后仍需单独发布到 npm。
+
+兼容性变化：`xsy create fieldJob`、`xsy update fieldJob` 和 `xsy delete fieldJob` 现在返回 `TICKET_ACTION_REQUIRED`。创建改用 `xsy ticket prepare create`；其它变更按业务意图选择已核验动作，再通过 `xsy ticket prepare` / `execute` 确认并执行。未核验或没有等价实现的动作保持不支持，不提供通用写入替代。具体参数、确认指纹和操作回查见[工单使用说明](skill/references/tickets/README.md)。
+
+HTTP 层仅对只读请求在401后刷新并重试，业务写入不自动重放。工单结果不确定时，使用 `xsy ticket operation <操作号> --reconcile` 回读核对。
+
+从源码升级后运行 `npm run build`，再重新启动 CLI/MCP 服务。CLI、stdio 和 HTTP 服务的版本号统一来自 `package.json`。
+
 ## 安装
 
 ```bash
