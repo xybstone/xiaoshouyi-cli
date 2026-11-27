@@ -9,14 +9,21 @@
   },
   "files": [
     "dist/",
-    "skill/"
+    "skill/",
+    "scripts/with-neocrm-session.mjs",
+    "scripts/ticket-live-acceptance.mjs"
   ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "start": "node dist/cli.js",
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit tests/contract",
+    "test:integration": "vitest run tests/integration/tickets",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "test:smoke": "npm run build && node scripts/ticket-smoke.mjs",
+    "check": "npm run typecheck && npm test && npm run build && node scripts/ticket-smoke.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
