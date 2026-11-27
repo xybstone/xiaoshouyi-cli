@@ -15,6 +15,13 @@ export class AuthError extends XsyError {
   }
 }
 
+export class PermissionError extends XsyError {
+  constructor(message = "当前账号没有执行此操作的权限") {
+    super(message);
+    this.name = "PermissionError";
+  }
+}
+
 /** API 业务错误（code !== 200） */
 export class ApiError extends XsyError {
   code: number;
@@ -37,16 +44,17 @@ export class NetworkError extends XsyError {
 export function classifyError(err: unknown): XsyError {
   if (err instanceof XsyError) return err;
 
-  const anyErr = err as Record<string, unknown>;
+  const anyErr = (err && typeof err === "object" ? err : {}) as Record<string, unknown>;
 
   // Axios 错误
   if (anyErr.isAxiosError) {
     const response = anyErr.response as Record<string, unknown> | undefined;
     const status = response?.status as number | undefined;
 
-    if (status === 401 || status === 403) {
+    if (status === 401) {
       return new AuthError();
     }
+    if (status === 403) return new PermissionError();
 
     if (response?.data) {
       const data = response.data as Record<string, unknown>;
