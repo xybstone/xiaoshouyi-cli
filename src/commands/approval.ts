@@ -91,11 +91,10 @@ export function registerApprovalCommands(parent: Command): void {
     .option("--format <format>", "输出格式", "json")
     .action(withAuth(async () => {
       try {
-        const cookie = await loginCrm();
+        await loginCrm();
         console.log(JSON.stringify({
           status: "ok",
           message: "CRM Cookie 已自动刷新",
-          cookiePreview: cookie.substring(0, 50) + "...",
         }, null, 2));
       } catch (e) { handleError(e); }
     }));
