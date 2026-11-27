@@ -5,7 +5,8 @@
   "type": "module",
   "bin": {
     "xsy": "./dist/cli.js",
-    "xsy-mcp": "./dist/mcp-server.js"
+    "xsy-mcp": "./dist/mcp-server.js",
+    "xsy-mcp-http": "./dist/mcp-http-server.js"
   },
   "files": [
     "dist/",
@@ -17,6 +18,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "start": "node dist/cli.js",
+    "mcp:http": "node dist/mcp-http-server.js",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit tests/contract",
     "test:integration": "vitest run tests/integration/tickets",
@@ -38,6 +40,7 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^8.4.3",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "axios": "^1.16.0",
     "commander": "^14.0.3",
     "zod": "^4.4.3"
