@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "read": {
+    "numberField": "caseNo",
+    "createdTimeField": "createdAt",
+    "dateEncoding": "unix-ms",
+    "evidence": {
+      "source": "official",
+      "reference": "2026-11-24 live REST: GET /rest/data/v2.0/xobjects/fieldJob/description; bounded GET /rest/data/v2/query confirmed caseNo exact match and createdAt millisecond [start,end) match. Private evidence: real-contracts-c0jiQz/summary.json.",
+      "verifiedAt": "2026-11-24T18:10:31+08:00"
+    }
+  },
+  "actions": []
+}
