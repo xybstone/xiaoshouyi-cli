@@ -27,6 +27,7 @@ export const API_KEY_MAP: Record<string, { label: string; apiKey: string }> = {
   visitRecord: { label: "跟进记录", apiKey: "visitRecord" },
   approvalWorkItem: { label: "审批待办", apiKey: "approvalWorkItem" },
   approvalRecord: { label: "审批记录", apiKey: "approvalRecord" },
+  fieldJob: { label: "技服派工单", apiKey: "fieldJob" },
 };
 
 // 环境变量键名（CI 场景）
