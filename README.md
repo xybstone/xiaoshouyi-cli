@@ -26,7 +26,7 @@ node dist/cli.js ticket --help
 
 配置、命令、契约格式和 MCP 宿主确认见 [工单使用说明](skill/references/tickets/README.md)；后续人工验证步骤见 [工单开发交接与测试指南](docs/fieldjob-development-handoff.md)。完整本地检查可运行 `npm run check`，该检查只使用假 Token 和合成服务端。
 
-## OMP MCP 服务
+## MCP 服务（stdio / Streamable HTTP）
 
 构建：
 
@@ -47,6 +47,29 @@ npm run build
 `tickets_execute` 需要显式启用写入并由可信宿主签名确认；`tickets_operation_review` 需要宿主签名确认人工核对内容，详见[宿主确认协议](skill/references/tickets/README.md#mcp宿主确认)。仅配置密钥不会自动完成客户端的用户确认与签名接入。
 
 `.omp/mcp.json` 只登记服务入口。部署时还需向服务进程配置凭据来源；复用现有隔离登录使用 `XSY_NEOCRM_PROJECT`，已核验的流程、时间线等协议通过 `XSY_TICKET_CONTRACTS` 加载，操作目录通过 `XSY_TICKET_STATE_DIR` 指定。本轮真实 MCP 只读调用及可复现配置见[验收记录](docs/fieldjob-gap-verification-2026-11-27.md#mcp真实只读验收)。
+
+### Streamable HTTP
+
+构建后运行 `npm run mcp:http`，或全局安装后运行 `xsy-mcp-http`。默认监听 `127.0.0.1:3333`，MCP地址为 `http://127.0.0.1:3333/mcp`，健康检查为 `http://127.0.0.1:3333/health`。CLI、stdio和HTTP服务使用相同的认证及工单合同环境变量。
+
+支持URL配置的MCP客户端可使用：
+
+```json
+{
+  "mcpServers": {
+    "xsy-sales": {
+      "type": "http",
+      "url": "http://127.0.0.1:3333/mcp"
+    }
+  }
+}
+```
+
+客户端传输类型选择 **Streamable HTTP**。服务使用官方MCP SDK的无状态模式：POST发送JSON-RPC，响应可以是SSE流，不分配会话ID；独立GET事件流及DELETE返回405。`/sse`不是此服务的入口。初始化、版本和Accept协商由SDK处理。
+
+`XSY_MCP_HTTP_HOST`和`XSY_MCP_HTTP_PORT`可设置监听地址及端口。回环监听默认无需额外服务令牌；如配置`XSY_MCP_HTTP_TOKEN`，客户端须添加`Authorization: Bearer <服务令牌>`。这是本服务的访问令牌，与CRM OAuth凭据分开。
+
+非回环监听须同时配置至少32字节的服务令牌及`XSY_MCP_HTTP_ALLOWED_HOSTS`，后者为逗号分隔的明确域名/IP和端口（如`crm-mcp.example.test:3333`）。浏览器跨域客户端可通过`XSY_MCP_HTTP_ALLOWED_ORIGINS`添加明确的HTTP/HTTPS origin；默认仅允许本服务origin。服务验证Host、Origin、请求体大小和媒体类型，且不在HTTP日志打印CRM凭据或业务响应。通过其它机器连接本机回环接口时，可以使用SSH端口转发。
 
 销售 MCP 工具：
 
