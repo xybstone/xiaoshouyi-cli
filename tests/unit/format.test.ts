@@ -6,6 +6,14 @@ import type { ApiResponse } from "../../src/types/index.js";
 
 describe("formatOutput", () => {
   describe("json mode", () => {
+    it("decodes the string success code and data envelope used by live describe", () => {
+      const response = { code: "200", msg: "success", data: { apiKey: "fieldJob", fields: [{ apiKey: "name" }] } };
+      expect(JSON.parse(formatOutput(response, { format: "json" }))).toEqual({ code: 200, result: response.data });
+      expect(JSON.parse(formatOutput(response, { format: "raw" }))).toEqual(response.data);
+    });
+    it("preserves an explicit null result rather than falling back to data", () => {
+      expect(JSON.parse(formatOutput({ code: 200, msg: "success", result: null, data: { secret: "unused" } }, { format: "json" })).result).toBeNull();
+    });
     it("outputs success with {code, result}", () => {
       const resp: ApiResponse = { code: 200, msg: "操作成功", result: { id: 1, name: "test" } };
       const output = formatOutput(resp, { format: "json" });
