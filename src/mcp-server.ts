@@ -1,4 +1,9 @@
+try { process.loadEnvFile(); } catch { /* optional .env */ }
+
 import pkg from "../package.json" with { type: "json" };
+import { createInterface } from "node:readline";
+import { callTicketTool, ticketToolDefinitions } from "./tickets/mcp.js";
+import { TicketError, object } from "./tickets/types.js";
 import { getApiClient } from "./api/client.js";
 import { getCrmFieldDictionary, getCrmObjectMetadata } from "./crm-knowledge.js";
 
@@ -105,7 +110,39 @@ async function standardPricebook(productId?: string, limit = 100): Promise<unkno
 
 async function orderBom(orderNo: string): Promise<unknown> { return orderDetail(orderNo); }
 
-async function callTool(name: string, args: Record<string, unknown>): Promise<unknown> { if (name === "sales_order_detail") return orderDetail(String(args.orderNo)); if (name === "sales_hci_quote_details") return hciDetails(args.orderNo ? String(args.orderNo) : undefined, Number(args.limit ?? 20)); if (name === "sales_monthly_summary") return monthlySummary(String(args.start ?? "2025-03-01"), String(args.end ?? "2027-02-28")); if (name === "sales_standard_pricebook") return standardPricebook(args.productId ? String(args.productId) : undefined, Number(args.limit ?? 100)); if (name === "sales_order_bom") return orderBom(String(args.orderNo)); if (name === "sales_order_reconciliation") return orderReconciliation(String(args.orderNo)); if (name === "sales_crm_field_dictionary") return getCrmFieldDictionary(); if (name === "sales_crm_object_metadata") return getCrmObjectMetadata(String(args.apiKey)); throw new Error(`未知工具: ${name}`); }
+async function callTool(name: string, args: Record<string, unknown>): Promise<unknown> { if (name.startsWith("tickets_")) return callTicketTool(name,args); if (name === "sales_order_detail") return orderDetail(String(args.orderNo)); if (name === "sales_hci_quote_details") return hciDetails(args.orderNo ? String(args.orderNo) : undefined, Number(args.limit ?? 20)); if (name === "sales_monthly_summary") return monthlySummary(String(args.start ?? "2025-03-01"), String(args.end ?? "2027-02-28")); if (name === "sales_standard_pricebook") return standardPricebook(args.productId ? String(args.productId) : undefined, Number(args.limit ?? 100)); if (name === "sales_order_bom") return orderBom(String(args.orderNo)); if (name === "sales_order_reconciliation") return orderReconciliation(String(args.orderNo)); if (name === "sales_crm_field_dictionary") return getCrmFieldDictionary(); if (name === "sales_crm_object_metadata") return getCrmObjectMetadata(String(args.apiKey)); throw new Error(`未知工具: ${name}`); }
 
-async function main(): Promise<void> { let buffer = ""; process.stdin.setEncoding("utf8"); for await (const chunk of process.stdin) { buffer += chunk; let index = buffer.indexOf("\n"); while (index >= 0) { const line = buffer.slice(0, index); buffer = buffer.slice(index + 1); index = buffer.indexOf("\n"); if (!line.trim()) continue; const request = JSON.parse(line) as { id?: unknown; method?: string; params?: { name?: string; arguments?: Record<string, unknown> } }; try { if (request.method === "initialize") jsonRpc(request.id, { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "xsy-sales", version: pkg.version } }); else if (request.method === "notifications/initialized") continue; else if (request.method === "tools/list") jsonRpc(request.id, { tools }); else if (request.method === "tools/call") jsonRpc(request.id, { content: [{ type: "text", text: JSON.stringify(await callTool(request.params?.name ?? "", request.params?.arguments ?? {}), null, 2) }] }); else if (request.id !== undefined) error(request.id, -32601, `不支持的方法: ${request.method ?? ""}`); } catch (err) { if (request.id !== undefined) error(request.id, -32000, err instanceof Error ? err.message : String(err)); } } } }
-void main();
+async function main(): Promise<void> {
+  const lines = createInterface({ input: process.stdin, crlfDelay: Infinity });
+  for await (const line of lines) {
+    if (!line.trim()) continue;
+    if (Buffer.byteLength(line) > 1024 * 1024) { error(null, -32600, "请求超过 1MiB"); continue; }
+    let parsed: unknown;
+    try { parsed = JSON.parse(line); } catch { error(null, -32700, "JSON 解析失败"); continue; }
+    const request = object(parsed);
+    const id = request.id;
+    if (request.jsonrpc !== "2.0" || typeof request.method !== "string" || id !== undefined && id !== null && typeof id !== "number" && typeof id !== "string") {
+      error(null, -32600, "无效 JSON-RPC 请求"); continue;
+    }
+    if (id === undefined) continue;
+    const params = object(request.params);
+    if (request.method === "initialize") {
+      const requested = String(params.protocolVersion ?? "");
+      const protocolVersion = ["2025-06-18", "2025-03-26", "2024-11-05"].includes(requested) ? requested : "2025-06-18";
+      jsonRpc(id, { protocolVersion, capabilities: { tools: {} }, serverInfo: { name: "xsy-sales", version: pkg.version } });
+    } else if (request.method === "ping") jsonRpc(id, {});
+    else if (request.method === "tools/list") jsonRpc(id, { tools: [...tools, ...ticketToolDefinitions()] });
+    else if (request.method === "tools/call") {
+      if (typeof params.name !== "string" || params.arguments !== undefined && (params.arguments === null || typeof params.arguments !== "object" || Array.isArray(params.arguments))) {
+        error(id, -32602, "工具参数格式无效"); continue;
+      }
+      try {
+        const result = await callTool(params.name, object(params.arguments));
+        jsonRpc(id, { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] });
+      } catch (err) {
+        jsonRpc(id, { isError: true, content: [{ type: "text", text: JSON.stringify({ code: err instanceof TicketError ? err.code : "TOOL_ERROR", message: err instanceof Error ? err.message : "工具调用失败", details: err instanceof TicketError ? err.details : undefined }) }] });
+      }
+    } else error(id, -32601, "不支持的方法");
+  }
+}
+void main().catch(() => { process.stderr.write("MCP 输入流异常\n"); process.exitCode = 1; });
