@@ -1,7 +1,7 @@
 // errors.test.ts — 错误分类单元测试
 
 import { describe, it, expect } from "vitest";
-import { classifyError, AuthError, ApiError, NetworkError, XsyError } from "../../src/api/errors.js";
+import { classifyError, AuthError, PermissionError, ApiError, NetworkError, XsyError } from "../../src/api/errors.js";
 
 describe("classifyError", () => {
   it("returns same XsyError if already one", () => {
@@ -15,10 +15,10 @@ describe("classifyError", () => {
     expect(result).toBeInstanceOf(AuthError);
   });
 
-  it("classifies 403 as AuthError", () => {
+  it("classifies 403 as PermissionError", () => {
     const axiosErr = createAxiosError(403);
     const result = classifyError(axiosErr);
-    expect(result).toBeInstanceOf(AuthError);
+    expect(result).toBeInstanceOf(PermissionError);
   });
 
   it("classifies API error response as ApiError", () => {

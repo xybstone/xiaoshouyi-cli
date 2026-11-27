@@ -13,14 +13,16 @@ interface FormatOptions {
 
 // 主格式化入口
 export function formatOutput(
-  response: ApiResponse,
+  response: Omit<ApiResponse, "code" | "result"> & {
+    code: number | string; result?: unknown; data?: unknown;
+  },
   options: FormatOptions
 ): string {
-  if (response.code !== 200) {
+  if (response.code !== 200 && response.code !== "200") {
     return JSON.stringify({ code: response.code, msg: response.msg }, null, 2);
   }
 
-  const result = response.result;
+  const result = Object.hasOwn(response, "result") ? response.result : response.data;
 
   switch (options.format) {
     case "json":

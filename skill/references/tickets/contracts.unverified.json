@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "actions": [
+    {
+      "action": "create",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "submit",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "assign",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "reassign",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "accept",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "reply",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "pause",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "resume",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "escalate",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "resolve",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "complete",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "close",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "reopen",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "return",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "void",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "attachment_upload",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "attachment_link",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "worklog",
+      "verification": "unverified",
+      "version": "unverified"
+    },
+    {
+      "action": "report",
+      "verification": "unverified",
+      "version": "unverified"
+    }
+  ],
+  "timeline": [
+    {
+      "name": "CRM history",
+      "verification": "unverified"
+    }
+  ],
+  "download": {
+    "verification": "unverified"
+  }
+}

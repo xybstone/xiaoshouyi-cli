@@ -4,7 +4,7 @@ import { execSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync, unlinkSync, existsSync } from "node:fs";
 import path from "node:path";
 import type { AuthState } from "../types/index.js";
-import { CONFIG_DIR, AUTH_FILE } from "../config.js";
+import { AUTH_FILE } from "../config.js";
 
 // ---- 抽象接口 ----
 

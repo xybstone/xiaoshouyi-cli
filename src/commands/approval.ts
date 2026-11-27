@@ -4,7 +4,7 @@ import { Command } from "commander";
 import { withAuth } from "../middleware/auth-check.js";
 import { formatOutput } from "../api/format.js";
 import { fmt, parseFields, handleError } from "./shared.js";
-import { getCrmCookie, loginCrm } from "../api/crm-client.js";
+import { loginCrm } from "../api/crm-client.js";
 import {
   queryApprovalWorkItems,
   getApprovalWorkItem,
@@ -89,13 +89,12 @@ export function registerApprovalCommands(parent: Command): void {
     .command("refresh-cookie")
     .description("自动刷新 CRM Cookie（基于已存储的凭据）")
     .option("--format <format>", "输出格式", "json")
-    .action(withAuth(async (opts: CmdOpts) => {
+    .action(withAuth(async () => {
       try {
-        const cookie = await loginCrm();
+        await loginCrm();
         console.log(JSON.stringify({
           status: "ok",
           message: "CRM Cookie 已自动刷新",
-          cookiePreview: cookie.substring(0, 50) + "...",
         }, null, 2));
       } catch (e) { handleError(e); }
     }));

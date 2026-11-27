@@ -1,10 +1,12 @@
 // OAuth2 Password Grant 认证管理器
 
 import axios from "axios";
-import { AUTH_BASE_URL, DEFAULT_TIMEOUT, TOKEN_REFRESH_MARGIN } from "../config.js";
+import { API_BASE_URL, AUTH_BASE_URL, DEFAULT_TIMEOUT, TOKEN_REFRESH_MARGIN } from "../config.js";
 import type { AuthState, AuthConfig } from "../types/index.js";
 import type { AuthStorage } from "./storage.js";
 import { createAuthStorage } from "./storage.js";
+import { getNeoCrmProvider, type NeoCrmScope } from "./neocrm-provider.js";
+import { AuthError } from "../api/errors.js";
 
 // OAuth2 token 响应体
 interface TokenResponse {
@@ -34,17 +36,22 @@ export class AuthManager {
 
   constructor(storage?: AuthStorage) {
     this.storage = storage ?? createAuthStorage();
-    this.state = this.storage.read();
+    // Selecting an isolated provider must not even read another local account.
+    this.state = getNeoCrmProvider() ? null : this.storage.read();
   }
 
   // 是否已登录且 token 未过期
   isAuthenticated(): boolean {
+    const provider = getNeoCrmProvider();
+    if (provider) return provider.scope()?.identityVerified === true;
     if (!this.state) return false;
     return Date.now() < this.state.expiresAt - TOKEN_REFRESH_MARGIN;
   }
 
   // 获取有效 access token，必要时自动刷新
   async getToken(): Promise<string | null> {
+    const provider = getNeoCrmProvider();
+    if (provider) return (await provider.session()).accessToken;
     // 环境变量直通（CI 场景）
     if (process.env.XSY_ACCESS_TOKEN) {
       return process.env.XSY_ACCESS_TOKEN;
@@ -67,6 +74,7 @@ export class AuthManager {
   }
 
   async login(config: AuthConfig): Promise<AuthState> {
+    if (getNeoCrmProvider()) throw new AuthError("请在原 NeoCRM 隔离环境登录，或重启进程后选择本项目认证；不会复制登录凭据。");
     const params = new URLSearchParams();
     params.append("grant_type", "password");
     params.append("client_id", config.clientId);
@@ -105,7 +113,14 @@ export class AuthManager {
     return state;
   }
 
-  async refresh(): Promise<void> {
+  async refresh(previousToken?: string): Promise<void> {
+    const provider = getNeoCrmProvider();
+    if (provider) {
+      await provider.refreshAfter401(previousToken);
+      return;
+    }
+    if (process.env.XSY_ACCESS_TOKEN)
+      throw new AuthError("环境 Token 不能自动刷新；未使用其他本地账号凭据。");
     // 阶段 1：尝试 refresh_token grant
     if (this.state?.refreshToken) {
       try {
@@ -165,7 +180,48 @@ export class AuthManager {
   }
 
   getApiBaseUrl(): string {
+    const provider = getNeoCrmProvider();
+    if (provider) {
+      const base = provider.scope()?.apiBaseUrl;
+      if (!base) throw new AuthError("请先读取并验证 NeoCRM 会话。");
+      if (process.env.XSY_API_BASE_URL) {
+        try {
+          const url = new URL(process.env.XSY_API_BASE_URL);
+          if (url.origin !== base || url.username || url.password || url.pathname !== "/" || url.search || url.hash)
+            throw new Error();
+        } catch {
+          throw new AuthError("XSY_API_BASE_URL 与 NeoCRM 会话环境不符；未发送请求。");
+        }
+      }
+      return base;
+    }
     return this.state?.apiBaseUrl ?? API_BASE_URL;
+  }
+
+  async getSessionIdentity(): Promise<NeoCrmScope | undefined> {
+    const provider = getNeoCrmProvider();
+    if (!provider) return undefined;
+    const { accessToken: _secret, ...scope } = await provider.session();
+    return scope;
+  }
+
+  // A caller that needs both values must use one original-provider read. This
+  // is an atomic projection, not a token cache or a replacement for HTTP auth.
+  async getRequestSession(): Promise<{ token: string | null; identity: NeoCrmScope | undefined }> {
+    const provider = getNeoCrmProvider();
+    if (!provider) return { token: await this.getToken(), identity: undefined };
+    const session = await provider.session();
+    return {
+      token: session.accessToken,
+      identity: {
+        source: session.source,
+        apiBaseUrl: session.apiBaseUrl,
+        crmBaseUrl: session.crmBaseUrl,
+        tenantId: session.tenantId,
+        subjectId: session.subjectId,
+        identityVerified: session.identityVerified,
+      },
+    };
   }
 
   getStatus(): {
@@ -176,6 +232,14 @@ export class AuthManager {
     hasCredentialsForRelogin: boolean;
     canAutoRefreshCrmCookie: boolean;
   } {
+    const provider = getNeoCrmProvider();
+    if (provider) return {
+      authenticated: provider.scope()?.identityVerified === true,
+      tenantId: provider.scope()?.tenantId,
+      hasRefreshToken: false,
+      hasCredentialsForRelogin: false,
+      canAutoRefreshCrmCookie: false,
+    };
     if (!this.state) {
       return { authenticated: false, hasRefreshToken: false, hasCredentialsForRelogin: false, canAutoRefreshCrmCookie: false };
     }
@@ -191,15 +255,18 @@ export class AuthManager {
 
   /** 获取用户名（用于 CRM 登录） */
   getUsername(): string | undefined {
+    if (getNeoCrmProvider()) return undefined;
     return this.state?.username;
   }
 
   /** 获取原始密码（不含安全令牌，用于 CRM 登录） */
   getRawPassword(): string | undefined {
+    if (getNeoCrmProvider()) return undefined;
     return this.state?.rawPassword;
   }
 
   logout(): void {
+    if (getNeoCrmProvider()) throw new AuthError("请在原 NeoCRM 隔离环境登出；没有删除本项目或源项目凭据。");
     this.state = null;
     this.storage.delete();
   }

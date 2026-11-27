@@ -4,15 +4,17 @@ import { getApiClient } from "../api/client.js";
 import { classifyError } from "../api/errors.js";
 import type { ApiResponse, DescribeResult, QueryResult } from "../types/index.js";
 import { API_OBJECTS_PREFIX, DESCRIBE_PREFIX, QUERY_PATH } from "../config.js";
+import { guardObjectWrite } from "../tickets/guard.js";
 
 // 获取对象字段元数据
 export async function describeObject(
-  apiKey: string
+  apiKey: string,
+  options: {timeout?:number} = {},
 ): Promise<ApiResponse<DescribeResult>> {
   try {
     const client = getApiClient();
     const response = await client.get<ApiResponse<DescribeResult>>(
-      `${DESCRIBE_PREFIX}/${apiKey}/description`
+      `${DESCRIBE_PREFIX}/${apiKey}/description`,options,
     );
     return response.data;
   } catch (err) {
@@ -41,6 +43,7 @@ export async function createObject(
   apiKey: string,
   data: Record<string, unknown>
 ): Promise<ApiResponse> {
+  guardObjectWrite(apiKey);
   try {
     const client = getApiClient();
     const response = await client.post<ApiResponse>(
@@ -59,6 +62,7 @@ export async function updateObject(
   id: string,
   data: Record<string, unknown>
 ): Promise<ApiResponse> {
+  guardObjectWrite(apiKey);
   try {
     const client = getApiClient();
     const response = await client.patch<ApiResponse>(
@@ -76,6 +80,7 @@ export async function deleteObject(
   apiKey: string,
   id: string
 ): Promise<ApiResponse> {
+  guardObjectWrite(apiKey);
   try {
     const client = getApiClient();
     const response = await client.delete<ApiResponse>(
@@ -89,13 +94,14 @@ export async function deleteObject(
 
 // SQL 查询
 export async function queryObjects(
-  sql: string
+  sql: string,
+  options: {timeout?:number} = {},
 ): Promise<ApiResponse<QueryResult>> {
   try {
     const client = getApiClient();
     const response = await client.get<ApiResponse<QueryResult>>(
       QUERY_PATH,
-      { params: { q: sql } }
+      { ...options, params: { q: sql } }
     );
     return response.data;
   } catch (err) {

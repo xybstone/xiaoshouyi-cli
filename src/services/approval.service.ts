@@ -79,7 +79,7 @@ async function getCookieOrThrow(): Promise<string> {
  * POST /rest/data/v2.0/creekflow/approval/flowTask/query
  */
 export async function queryApprovalWorkItems(
-  statusFilter?: number,
+  _statusFilter?: number,
   page = 1,
   size = 20,
 ): Promise<ApiResponse<QueryResult>> {

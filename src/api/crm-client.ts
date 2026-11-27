@@ -6,6 +6,8 @@ import path from "node:path";
 import axios from "axios";
 import { CRM_BASE_URL, CRM_COOKIE_FILE, DEFAULT_TIMEOUT } from "../config.js";
 import { getAuthManager } from "../auth/manager.js";
+import { getNeoCrmProvider } from "../auth/neocrm-provider.js";
+import { AuthError } from "./errors.js";
 import type { ApiResponse, QueryResult } from "../types/index.js";
 
 // ---- 常量 ----
@@ -27,11 +29,6 @@ const PASSPORT_COOKIE_PREFIXES = [
 ];
 
 // 需要定期刷新的会话 Cookie 前缀
-const SESSION_COOKIE_PREFIXES = [
-  "SESSION",
-  "JSESSIONID",
-  "AUC_SESSION",
-];
 
 // ---- Types ----
 
@@ -67,6 +64,8 @@ interface CrmActivityResponse {
  */
 export function getCrmCookie(): string | null {
   if (process.env.XSY_CRM_COOKIE) return process.env.XSY_CRM_COOKIE;
+  // An isolated OAuth session must not inherit a different local browser account.
+  if (getNeoCrmProvider()) return null;
   try {
     if (fs.existsSync(CRM_COOKIE_FILE)) {
       const data = JSON.parse(fs.readFileSync(CRM_COOKIE_FILE, "utf-8"));
@@ -80,6 +79,7 @@ export function getCrmCookie(): string | null {
  * 保存 CRM Cookie 到文件，保留长期有效的 passport cookie
  */
 export function saveCrmCookie(newCookie: string): void {
+  if (getNeoCrmProvider()) throw new AuthError("NeoCRM 隔离模式不向本地认证目录保存 Cookie；请显式提供并核验所属身份。");
   const dir = path.dirname(CRM_COOKIE_FILE);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
@@ -135,13 +135,14 @@ export function hasCrmCookie(): boolean {
  * 清除 CRM Cookie 文件
  */
 export function clearCrmCookie(): void {
+  if (getNeoCrmProvider()) throw new AuthError("NeoCRM 隔离模式不删除其他本地账号的 Cookie。");
   try { fs.unlinkSync(CRM_COOKIE_FILE); } catch { /* ignore */ }
 }
 
 /**
  * 从 HTML Response 提取 Set-Cookie 中的 name=value 部分
  */
-function extractSetCookie(headers: Record<string, unknown>): string | null {
+export function extractSetCookie(headers: Record<string, unknown>): string | null {
   const raw = headers["set-cookie"];
   if (!raw) return null;
   const cookies = Array.isArray(raw) ? raw : [raw];
@@ -165,9 +166,8 @@ function extractSetCookie(headers: Record<string, unknown>): string | null {
  * @returns 成功后的完整 cookie 字符串
  */
 export async function loginCrm(): Promise<string> {
+  if (getNeoCrmProvider()) throw new AuthError("NeoCRM 隔离模式不自动创建或合并本地 CRM Cookie；请提供经独立身份核验的会话。");
   const manager = getAuthManager();
-  const username = manager.getUsername();
-  const rawPassword = manager.getRawPassword();
   const token = await manager.getToken();
   const existingCookie = getCrmCookie();
   const existingParts = existingCookie ? parseCookies(existingCookie) : {};
@@ -182,7 +182,7 @@ export async function loginCrm(): Promise<string> {
           params: { access_token: token },
           timeout: DEFAULT_TIMEOUT,
           maxRedirects: 0,
-          validateStatus: (status) => true,
+          validateStatus: () => true,
           headers: { Cookie: existingCookie || "" },
         }
       );
@@ -248,8 +248,9 @@ export async function loginCrm(): Promise<string> {
 interface CrmRequestOptions {
   /** Cookie 字符串，不传则自动获取 */
   cookie?: string;
-  /** 是否启用 Cookie 过期自动刷新重试（默认 true） */
+  /** 仅明确只读请求可显式启用 Cookie 过期重试；写入永不自动重放 */
   autoRefresh?: boolean;
+  readOnly?: boolean;
 }
 
 /**
@@ -260,7 +261,7 @@ export async function crmPost<T>(
   params: Record<string, string>,
   options: CrmRequestOptions = {},
 ): Promise<{ status: number; statusText: string; data: T }> {
-  const autoRefresh = options.autoRefresh ?? true;
+  const autoRefresh = options.readOnly === true && options.autoRefresh === true && !getNeoCrmProvider();
   let cookie = options.cookie || getCrmCookie();
 
   if (!cookie) {
@@ -276,6 +277,7 @@ export async function crmPost<T>(
       new URLSearchParams(params).toString(),
       {
         timeout: DEFAULT_TIMEOUT,
+        maxRedirects: 0,
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           Cookie: c,

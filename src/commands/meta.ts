@@ -4,8 +4,9 @@ import { Command } from "commander";
 import { API_KEY_MAP } from "../config.js";
 
 // 收集所有已注册的命令信息
-function collectCommands(cmd: Command): { name: string; description: string; subcommands: ReturnType<typeof collectCommands>[] }[] {
-  const result: ReturnType<typeof collectCommands>[] = [];
+interface CommandDescription { name: string; description: string; subcommands: CommandDescription[]; }
+function collectCommands(cmd: Command): CommandDescription[] {
+  const result: CommandDescription[] = [];
   for (const c of cmd.commands) {
     result.push({
       name: c.name(),
